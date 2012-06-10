@@ -1,7 +1,7 @@
 monaco
 ======
 
-Monaco is web application framework build based on Backbonejs, that allows you to easly create web based applications.
+Monaco is web application framework that allows you to easly create web based applications. Its original build was based on Backbone.js (https://github.com/documentcloud/backbone), but its archteture differes from it.
 
 Monaco can be used for applications that don't require interaction with the server to exchange data, but it really shines when it is used with Restfull JSON APIs.
 
@@ -30,6 +30,21 @@ Internal Features
 
 **Events** : TODO
 
+
+Dependencies
+------------
+
+Underscore.js - TODO: description
+
+DOM Selector Engine - Currently Monaco depends on one of the following DOM Selector Engines: 'jQuery', 'jqMobi', 'Zepto'. You can choose to work with any of those, or any DOM Selector Engine that supports the following features:
+
+- AJAX requests with the following interface:
+    - TODO: interface
+
+- DOM Element Selectos - Using CSS Selectors
+
+- DOM Event Delegation - Using the follwing interface:
+    - TODO: interface
 
 
 
