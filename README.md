@@ -14,15 +14,21 @@ Main Components
 
 **View**  : A view controls what appears on the application, in some applications it might be considered a 'page', but the view it is much more than just that, it also controls the interaction between the end user and your page through events.
 
-**Widgets** : A widget is the content that will be presented to the end user so he/she can interact with your application. Each view will be composed of one of many widgets. Widgets might be linked with data that comes from the model, so that everytime the model changes the widget will reflect the change automatically.
+**Widget** : A widget is the content that will be presented to the end user so he/she can interact with your application. Each view will be composed of one of many widgets. Widgets might be linked with data that comes from the model, so that everytime the model changes the widget will reflect the change automatically.
+
+**Form** : A form is a special kind of Widget capable of serializing HTML form elements, perform input validation and convert it to a Model.
+
+**Transition** : Trasition is a manager capable of transfering the focus from one view to the other. It gives you the flexibility to decide what to do with the origin and destination views. Also monaco ships with a special CSS file that you can use to enable effects in your transitions.
 
 
 Internal Features
 -----------------
 
-**Local Caching** : Monaco provides you with a local caching engine that will speed up your application, giving your end users a better 
+**Local Caching** : Monaco provides you with a local caching engine that will speed up your application, giving your end-users a better experience. Local caching comes disabled by default, but can be easly enabled when bootstraping your application.
 
-**Transitions** : Provides an automated way of going from one view to the other. Mocaco ships with a CSS file that can be used to enhace trasitions with CSS animations.
+**Model-Widget Binding** : TODO
+
+**Events** : TODO
 
 
 
