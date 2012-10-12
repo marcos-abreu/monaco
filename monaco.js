@@ -166,12 +166,22 @@
     /* -- COLLECTION ----------------------------------------------------------- */
     // extended backbone collection class
 
-    Monaco.Collection = Backbone.Collection.extend({});
+    Monaco.Collection = Backbone.Collection.extend({
+        fetch : function(options) {
+            options.error = options.error || Monaco.Router.defaultError || void 0;
+            return Backbone.Collection.prototype.constructor.apply(this, arguments);
+        }
+    });
 
     /* -- MODEL ---------------------------------------------------------------- */
     // extended backbone model class
 
-    Monaco.Model = Backbone.Model.extend({});
+    Monaco.Model = Backbone.Model.extend({
+        fetch : function(options) {
+            options.error = options.error || Monaco.Router.defaultError || void 0;
+            return Backbone.Model.prototype.constructor.apply(this, arguments);
+        }
+    });
 
     /* -- VIEW ----------------------------------------------------------------- */
     // extended backbone view class
