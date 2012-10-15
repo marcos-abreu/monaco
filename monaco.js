@@ -170,7 +170,7 @@
     Monaco.Collection = Backbone.Collection.extend({
         fetch : function(options) {
             options.error = options.error || Monaco.Router.defaultError || void 0;
-            return Backbone.Collection.prototype.constructor.apply(this, arguments);
+            return Backbone.Collection.prototype.fetch.apply(this, arguments);
         }
     });
 
@@ -180,7 +180,7 @@
     Monaco.Model = Backbone.Model.extend({
         fetch : function(options) {
             options.error = options.error || Monaco.Router.defaultError || void 0;
-            return Backbone.Model.prototype.constructor.apply(this, arguments);
+            return Backbone.Model.prototype.fetch.apply(this, arguments);
         }
     });
 
