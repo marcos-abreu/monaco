@@ -155,10 +155,11 @@
             }
             var reParams = '([\\?]{1}.*)?';
             for (var i = 0, j = routes.length; i < j; i++) {
-                var key = routes[i][0];
+                var key = routes[i][0],
+                    method = _.isArray(routes[i][1]) ? routes[i][1][0] : routes[i][1];
                 // add query string pattern to each route // todo verify what to do if this isn't the case
                 var re = key.slice(-1) == '$' ? key.slice(0, -1)+reParams+'$' : key+reParams;
-                this.route(new RegExp(re), routes[i][1]);
+                this.route(new RegExp(re), method);
             }
         }
     });
