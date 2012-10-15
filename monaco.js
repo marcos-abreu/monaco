@@ -140,7 +140,7 @@
             this.initialize = function() {
                 _self._bindRegExRoutes();
                 initialize.apply(_self, arguments);
-            }
+            };
             Backbone.Router.prototype.constructor.apply(this, arguments);
         },
 
@@ -207,34 +207,42 @@
             };
         },
 
-        // make sure the inner views are created and (optinally) rendered
+        // loops over the subviews creating/rendering them depending on the options passed
+        // each sub-view item have: [0] - view element; [1] - view template ; [3] - options (optional) as follow:
+        //          autoCreate - automatically creates the subview || true by default
+        //          autoRender - automatically renders the subview || true by default
+        //          viewClass - the class used to create the view  || Monaco.View by default
         _render : function() {
             var _arguments = arguments,
-                autorender = _.has(this, 'autoRenderChildren') || true;
+                autoCreate = _.has(this, 'autoCreate') || true;
             _.each(this.views, function(item, index, views) {
-                var viewClass = item[3] || Monaco.View;
-                var View = viewClass.extend({
-                    template : item[1]
-                });
-                var view = new View({
-                    el: item[0]
-                });
-                this.children.push(view);
-                view.parent = this;
-                if (autorender) { // TODO: verify if the autoRenderChildren shouldn't be autoCreateChildren and be moved up
-                    view.render.apply(view, _arguments);
+                var options = item[3] || {};
+                if (!_.has(options, 'autoCreate') || options.autoCreate === true) {
+                    var viewClass = options.viewClass || Monaco.View;
+                    var View = viewClass.extend({
+                        template : item[1]
+                    });
+                    var view = new View({
+                        el: item[0]
+                    });
+                    this.children.push(view);
+                    view.parent = this;
+                    if (!_.has(options, 'autoRender') || options.autoRender === true) {
+                        view.render.apply(view, _arguments);
+                    }
                 }
             }, this);
         },
 
-        // default render method
+        // default render method that renders the template by appending it to the `el`
         render : function(data) {
             data = data || this.collection || this.model || null;
             $(this.el).append(this.template(data));
             return this;
         },
 
-        // overrided close method - to deal with inner views
+        // loops over any known sub view rendered and attempts to close them by using their
+        // repsective close methods
         _close : function() {
             var _arguments = arguments;
             _.each(this.children, function(view) {
