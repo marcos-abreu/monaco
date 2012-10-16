@@ -293,18 +293,18 @@
                 resource = obj.resource || obj.collection.resource || null,
                 data = (isCollection) ? this._findCollection(resource, true) : this._findModel(resource, obj);
             if (data) {
-                return data; 
+                return (isCollection ? data.resp : data);
             }
             return false;
         },
 
         set : function(obj, data, expire) {
             var isCollection = _.has(obj, 'models'),
-                resource = obj.resource || obj.collection.resource || null;
-                localData = _.isArray(data) ? _.clone(data) : _.clone(data[obj.apiResponseKey]);
+                resource = obj.resource || obj.collection.resource || null,
+                localData = _.clone(data);
 
             if (isCollection) {
-                this._setExpireTime(localData, expire);
+                localData = this._setExpireTime(localData, expire);
                 this._storageSet(resource, 'data', localData);
             } else {
                 // TODO: verify if it is working
@@ -368,12 +368,14 @@
                 date.setMinutes(date.getMinutes() + (expire || this.defaultExpire));
                 timestamp = date.getTime();
             }
-            data.unshift({timestamp: timestamp});
-            // no need to return data, since the reference-value manipulated one of its items
+            return {
+                timestamp : timestamp,
+                resp : data
+            };
         },
 
         _isExpired : function(data) {
-            var expire = data[0].timestamp,
+            var expire = data.timestamp,
                 now = new Date();
             return (!_.isNull(expire) && now.getTime() > expire);
         },
@@ -387,17 +389,19 @@
                     if (caching[i] == 'storage' && collectionLookup) {
                         this._memorySet(resource, local);
                     }
-                    return local.slice(1); // remove the timestamp
+                    return local;
                 }
             }
 
             return null;
         },
 
+        // This will only work if the response is either an array of items and their attributes or
+        // if the result was an object wich the key for the array of items has the same name as the resource
         _findModel : function(resource, obj) {
             var local = this._findCollection(resource, false);
             if (local) {
-                local = _.find(local, function(item) {
+                local = _.find((local.resp.resource || local.resp), function(item) {
                     return item.id === obj.attributes.id;
                 }, this);
             }
