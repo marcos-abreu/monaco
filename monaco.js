@@ -199,11 +199,13 @@
             this.render = function() {
                 render.apply(_self, arguments);
                 _self._render.apply(_self, arguments);
+                this.trigger('rendered', this);
             };
             var close = this.close || function() {};
             this.close = function() {
                 _self._close.apply(_self, arguments);
                 close.apply(_self, arguments);
+                this.trigger('closed', this);
             };
         },
 
