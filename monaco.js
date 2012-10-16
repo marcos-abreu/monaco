@@ -302,7 +302,7 @@
         set : function(obj, data, expire) {
             var isCollection = _.has(obj, 'models'),
                 resource = obj.resource || obj.collection.resource || null;
-                localData = _.clone(data);
+                localData = _.isArray(data) ? _.clone(data) : _.clone(data[obj.apiResponseKey]);
 
             if (isCollection) {
                 this._setExpireTime(localData, expire);
