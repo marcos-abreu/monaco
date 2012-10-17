@@ -257,9 +257,6 @@
         close : function() {
             this.dispose();
             $(this.el).empty(); // remove all child nodes - jQuery dependent
-            if (this.onClose) { // call onClose method if available
-                this.onClose();
-            }
         }
     });
 
