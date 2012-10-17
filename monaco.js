@@ -119,14 +119,14 @@
         Backbone.history.start({pushState: options.pushState});
     };
 
-    Application.prototype.transitionTo = function(targetView, renderOptions, Transition) {
+    Application.prototype.transitionTo = function(targetView, options, Transition) {
         if (!targetView) {
             throw new Error('missing target view');
         }
         var currentView = this.currentView || null;
         Transition = Transition || this.DefaultTransition || Monaco.Transition;
         var transition = new Transition(currentView, targetView);
-        this.currentView = transition.start(renderOptions);
+        this.currentView = transition.start(options);
     };
 
 
@@ -539,10 +539,14 @@
         //      transition from A (current view) to B (target view)
         //      close current view A
         //      return the new view (!important)
-        start : function(renderOptions) {
-            this.toView.render(renderOptions);
+        start : function(options) {
+            options = options || {};
+            this.toView.render(options);
             if (this.fromView) {
                 this.fromView.close();
+            }
+            if (_.has(options, 'scrollTop')) {
+                document.body.scrollTop = options.scrollTop;
             }
             return this.toView;
         }
