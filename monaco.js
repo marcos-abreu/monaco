@@ -99,10 +99,10 @@
     /* -- APPLICATION ---------------------------------------------------------- */
     // Application Structure
     var Application = Monaco.Application = function(options) {
-        this.models      = {};        // model list
-        this.collections = {};        // collection list
-        this.views       = {};        // views list
-        this.transitions = {};        // view transition list
+        this.model      = {};        // model list
+        this.collection = {};        // collection list
+        this.view       = {};        // views list
+        this.transition = {};        // view transition list
 
         options = options || {};
 
