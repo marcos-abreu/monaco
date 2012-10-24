@@ -104,9 +104,9 @@
         this.view       = {};        // views list
         this.transition = {};        // view transition list
 
-        options = options || {};
+        this.options = options || {};
 
-        Monaco.dispatcher.trigger('application:build', this, options);
+        Monaco.dispatcher.trigger('application:build', this, this.options);
     };
 
     Application.prototype.start = function(options) {
