@@ -169,6 +169,7 @@
 
     Monaco.Collection = Backbone.Collection.extend({
         fetch : function(options) {
+            options = options || {};
             options.error = options.error || Monaco.Router.defaultError || void 0;
             return Backbone.Collection.prototype.fetch.apply(this, arguments);
         }
@@ -179,6 +180,7 @@
 
     Monaco.Model = Backbone.Model.extend({
         fetch : function(options) {
+            options = options || {};
             options.error = options.error || Monaco.Router.defaultError || void 0;
             return Backbone.Model.prototype.fetch.apply(this, arguments);
         }
@@ -200,12 +202,14 @@
                 render.apply(_self, arguments);
                 _self._render.apply(_self, arguments);
                 this.trigger('rendered', this);
+                return this;
             };
             var close = this.close || function() {};
             this.close = function() {
                 _self._close.apply(_self, arguments);
                 close.apply(_self, arguments);
                 this.trigger('closed', this);
+                return this;
             };
         },
 
@@ -238,7 +242,7 @@
 
         // default render method that renders the template by appending it to the `el`
         render : function(data) {
-            data = data || this.collection || this.model || null;
+            data = data || (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : null));
             $(this.el).append(this.template(data));
             return this;
         },
