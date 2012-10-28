@@ -281,7 +281,7 @@
         options = options || {};
         if (options.prefetched) {
             _.each(options.prefetched, function(value, key) {
-                Monaco.local._storageSet(key, 'data', value);
+                Monaco.local.set({ resource : key , models : []}, value);
             }, this);
             delete options.prefetched;
         }
@@ -301,10 +301,10 @@
 
         get : function(obj) {
             var isCollection = _.has(obj, 'models'),
-                resource = obj.resource || obj.collection.resource || null,
-                data = (isCollection) ? this._findCollection(resource, true) : this._findModel(resource, obj);
+                resource = (obj.resource || obj.collection.resource || null),
+                data = (isCollection ? this._getCollectionData(resource, true) : this._getModelData(resource, obj));
             if (data) {
-                return (isCollection ? data.resp : data);
+                return (isCollection ? this.decompress(data.resp) : data);
             }
             return false;
         },
@@ -312,20 +312,40 @@
         set : function(obj, data, expire) {
             var isCollection = _.has(obj, 'models'),
                 resource = obj.resource || obj.collection.resource || null,
-                localData = _.clone(data);
+                localData = null;
 
             if (isCollection) {
-                localData = this._setExpireTime(localData, expire);
-                this._storageSet(resource, 'data', localData);
+                localData = _.clone(data);
+                localData = this.compress(localData);
             } else {
-                // TODO: verify if it is working
-                local = this._addToStorage(resource, obj, localData);
+                var collectionData = this._getCollectionData(resource, false);
+                if (collectionData) {
+                    localData = decompress(collectionData.resp);
+                    this._addToCollection(localData, data);
+                } else {
+                    return false;
+                }
             }
-            if (this._memoryHas(resource) || isCollection) {
+
+            localData = this._setExpireTime(localData, expire);
+            this._storageSet(resource, 'data', localData);
+            if (isCollection || this._memoryHas(resource)) {
                 this._memorySet(resource, localData);
             }
+            return true;
         },
 
+        // overwrite this method with your own implementation of data compression
+        compress : function(data) {
+            return data;
+        },
+
+        // overwrite this method with your own implementation of data decompression
+        decompress : function(data) {
+            return data;
+        },
+
+        // clear Monaco.local data from memory and local storage
         clear : function(resource, id) {
             // remove a specific item from a cached resource
             if (resource && id) { // todo
@@ -340,6 +360,7 @@
                 }
 
             // removes all resources cached
+            // todo: modify it to clear only keys added by the Monaco.local not everything
             } else {
                 root.localStorage.clear();
                 Monaco._memory = {};
@@ -347,23 +368,23 @@
         },
 
         _storageGet : function(name, type) {
-            console.log('## look in storage');
+            console.log('## look-up : local storage');
             var result = root.localStorage.getItem(this._getKey((type || 'data'), name));
             return (result === undefined || result == "undefined" || result === null) ? null : JSON.parse(result);
         },
 
         _storageSet : function(name, type, data) {
-            console.log('## set in storage');
+            console.log('## data set : storage');
             root.localStorage.setItem(this._getKey((type || 'data'), name), JSON.stringify(data));
         },
 
         _memoryGet : function(resource) {
-            console.log('## look in memory');
+            console.log('## look-up : memory');
             return (Monaco._memory) ? Monaco._memory[resource] : null;
         },
 
         _memorySet : function(resource, data) {
-            console.log('## set in memory');
+            console.log('## data set : memory');
             Monaco._memory = {};
             Monaco._memory[resource] = data;
         },
@@ -391,32 +412,51 @@
             return (!_.isNull(expire) && now.getTime() > expire);
         },
 
-        _findCollection : function(resource, collectionLookup) {
+        /*
+         * tries to get a collection data from any available caching layer (memory/localStorage)
+         *
+         * @param   string      resource            resource used to create the entry key
+         * @param   boolean     collectionLookup    flag indicating if this method is being called 
+         *                                          direct from a collection look-up or not
+         * @return  mixed                           an object with collection data if it is found and
+         *                                          data is not expired; null otherwise
+         */
+        _getCollectionData : function(resource, collectionLookup) {
             var caching = ['memory', 'storage'];
 
             for (var i = 0, j = caching.length; i < j; i++) {
-                var local = this['_'+caching[i]+'Get'](resource);
-                if (local && ! this._isExpired(local)) {
+                var localData = this['_'+caching[i]+'Get'](resource);
+                if (localData && !this._isExpired(localData)) {
                     if (caching[i] == 'storage' && collectionLookup) {
-                        this._memorySet(resource, local);
+                        this._memorySet(resource, localData);
                     }
-                    return local;
+                    return localData;
                 }
             }
 
             return null;
         },
 
-        // This will only work if the response is either an array of items and their attributes or
-        // if the result was an object wich the key for the array of items has the same name as the resource
-        _findModel : function(resource, obj) {
-            var local = this._findCollection(resource, false);
-            if (local) {
-                local = _.find((local.resp.resource || local.resp), function(item) {
-                    return item.id === obj.attributes.id;
+        /*
+         * tries to get a model data from any available caching layer (memory/localStorage)
+         *
+         * @param   string      resource            resource used to create the entry key
+         * @param   object      model               model object containing at least the id attribute
+         * @return  mixed                           an object with collection data if it is found and
+         *                                          data is not expired; null otherwise
+         */
+        _getModelData : function(resource, model) {
+            // This implementation is limited to collection responses containing array of model items
+            // or to collection responses as an object where a key matching with the collection resource
+            // name has an array of model items
+            var localCollection = this._getCollectionData(resource, false),
+                localData = null;
+            if (localCollection) {
+                localData = _.find((local.resp.resource || local.resp), function(item) {
+                    return item.id === model.attributes.id;
                 }, this);
             }
-            return local;
+            return localData;
         },
 
         _addToStorage : function(resource, model, data) {
