@@ -37,10 +37,13 @@
         return child;
     };
 
-    Monaco.fetchCollections = function(collections, callbacks) {
-        var allResponses = {};
-        var requestQueue = [];
+    Monaco.fetchCollections = function(collections, groupOptions) {
+        var allResponses = {},
+            requestQueue = [],
+            success = groupOptions.success,
+            errror = groupOptions.error;
 
+        // success and error callbacks of each collection.fetch calls
         var complete = function(collection, resp, options) {
             allResponses[collection.resource] = {
                 collection: collection,
@@ -58,8 +61,8 @@
                     req.abort();
                 }, this);
 
-                if (callbacks.error) {
-                    callbacks.error(collection, resp);
+                if (error) {
+                    return error(collection, resp);
                 }
 
             // success
@@ -67,17 +70,24 @@
                 requestQueue = _.filter(requestQueue, function(item) { 
                     return (item.resource !== collection.resource);
                 });
-                if (_.size(requestQueue) <= 0 && callbacks.success) {
-                    callbacks.success(allResponses);
+                if (_.size(requestQueue) <= 0 && success) {
+                    return success(allResponses);
                 }
             }
         };
 
+        groupOptions.success = complete;
+        groupOptions.error = complete;
+
+        var cid = _.uniqueId('mf-'),
+            mfId = cid+'|'+_.size(collections);
+
         _.each(collections, function(collection, index, collections) {
-            requestQueue.push(collection.fetch({
-                success : complete,
-                error : complete
-            }));
+            var fetchOptions = _.clone(groupOptions);
+            fetchOptions.multiFetch = (index+1)+'/'+mfId;
+
+            requestQueue.push(collection.fetch(fetchOptions));
+
             var lastItem = requestQueue.length - 1;
             // if data from local caching
             if (requestQueue[lastItem] === true) {
@@ -88,8 +98,8 @@
         }, this);
 
         // in case all requests came from local caching
-        if ((_.size(requestQueue) === 0) && (callbacks.success)) {
-            callbacks.success(allResponses);
+        if ((_.size(requestQueue) === 0) && (success)) {
+            return success(allResponses);
         }
     };
 
