@@ -346,23 +346,45 @@
         },
 
         // clear Monaco.local data from memory and local storage
-        clear : function(resource, id) {
-            // remove a specific item from a cached resource
-            if (resource && id) { // todo
-                throw new Error('option not implemented yet');
+        clear : function(name, type) {
+            var keyList;
 
-            // removes a resource from the cached resources
-            } else if (resource) {
-                this._storageSet("", resource);
-                if (Monaco._memory[resource]) {
-                    delete Monaco._memory[resource];
-                    // Monaco._memory - {};
+            // removes one item (name#type) from the cached resources
+            if (name) {
+                // remove the itme from local storage
+                var key = this._getKey((type || 'data'), name);
+                root.localStorage.removeItem(key);
+
+                // update monaco's key list
+                if (arguments.length === 3) {
+                    // used on recursive calls
+                    keyList = arguments[2];
+                } else {
+                    keyList = JSON.parse(root.localStorage.getItem('monaco:keys')) || [];
+                }
+                keyList = _.without(keyList, key);
+                if (keyList.length === 0) {
+                    root.localStorage.removeItem('monaco:keys');
+                } else {
+                    root.localStorage.setItem('monaco:keys', JSON.stringify(keyList));
                 }
 
-            // removes all resources cached
-            // todo: modify it to clear only keys added by the Monaco.local not everything
-            } else {
-                root.localStorage.clear();
+                // remove the item from memory
+                if (Monaco._memory[name]) { // todo: verify how is the key set in memory
+                    delete Monaco._memory[name];
+                }
+                return keyList;
+            }
+
+            // removes all resources cached by monaco
+            else {
+                keyList = JSON.parse(root.localStorage.getItem('monaco:keys')) || [];
+                var resource = null,
+                    currentList = keyList;
+                for (var i = 0, j = keyList.length; i < j; i++) {
+                    resource = keyList[i].split('#');
+                    currentList = this.clear.call(this, resource[1], resource[0], currentList);
+                }
                 Monaco._memory = {};
             }
         },
@@ -375,7 +397,16 @@
 
         _storageSet : function(name, type, data) {
             console.log('## data set : storage');
-            root.localStorage.setItem(this._getKey((type || 'data'), name), JSON.stringify(data));
+            // set monaco's key list
+            var key = this._getKey((type || 'data'), name),
+                keyList = JSON.parse(root.localStorage.getItem('monaco:keys')) || [];
+            if (keyList.indexOf(key) < 0) {
+                keyList.push(key);
+            }
+            root.localStorage.setItem('monaco:keys', JSON.stringify(keyList));
+
+            // set the item
+            root.localStorage.setItem(key, JSON.stringify(data));
         },
 
         _memoryGet : function(resource) {
