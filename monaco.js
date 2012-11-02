@@ -370,7 +370,7 @@
                 }
 
                 // remove the item from memory
-                if (Monaco._memory[name]) { // todo: verify how is the key set in memory
+                if (this._memoryHas(name)) {
                     delete Monaco._memory[name];
                 }
                 return keyList;
