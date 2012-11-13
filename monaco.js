@@ -304,7 +304,7 @@
                 resource = (obj.resource || obj.collection.resource || null),
                 data = (isCollection ? this._getCollectionData(resource, true) : this._getModelData(resource, obj));
             if (data) {
-                return (isCollection ? this.decompress(data.resp) : data);
+                return (isCollection ? data.resp : data);
             }
             return false;
         },
@@ -316,17 +316,17 @@
 
             if (isCollection) {
                 localData = _.clone(data);
-                localData = this.compress(localData);
             } else {
                 var collectionData = this._getCollectionData(resource, false);
                 if (collectionData) {
-                    localData = decompress(collectionData.resp);
+                    localData = collectionData.resp;
                     this._addToCollection(localData, data);
                 } else {
                     return false;
                 }
             }
 
+            localData = this.compress(localData);
             localData = this._setExpireTime(localData, expire);
             this._storageSet(resource, 'data', localData);
             if (isCollection || this._memoryHas(resource)) {
@@ -455,13 +455,15 @@
         _getCollectionData : function(resource, collectionLookup) {
             var caching = ['memory', 'storage'];
 
-            for (var i = 0, j = caching.length; i < j; i++) {
-                var localData = this['_'+caching[i]+'Get'](resource);
-                if (localData && !this._isExpired(localData)) {
-                    if (caching[i] == 'storage' && collectionLookup) {
+            for ( var i = 0, j = caching.length; i < j; i++ ) {
+                var localData = this['_'+caching[i]+'Get']( resource );
+                if (localData && ! this._isExpired(localData)) {
+                    var local = _.clone(localData);
+                    if (caching[i] === 'storage' && collectionLookup) {
                         this._memorySet(resource, localData);
                     }
-                    return localData;
+                    local.resp = this.decompress(local.resp);
+                    return local;
                 }
             }
 
@@ -481,13 +483,14 @@
             // or to collection responses as an object where a key matching with the collection resource
             // name has an array of model items
             var localCollection = this._getCollectionData(resource, false),
-                localData = null;
+                localModel = null,
+                key = resource.split('.')[0];
             if (localCollection) {
-                localData = _.find((local.resp.resource || local.resp), function(item) {
-                    return item.id === model.attributes.id;
+                localModel = _.find((localCollection.resp[key] || localCollection.resp), function(item) {
+                    return item.id === model.get('id');
                 }, this);
             }
-            return localData;
+            return localModel;
         },
 
         _addToStorage : function(resource, model, data) {
