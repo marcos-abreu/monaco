@@ -133,9 +133,11 @@
         if (!targetView) {
             throw new Error('missing target view');
         }
-        var currentView = this.currentView || null;
-        Transition = Transition || this.DefaultTransition || Monaco.Transition;
-        var transition = new Transition(currentView, targetView);
+
+        var currentView = (this.currentView || null),
+            TransitionClass = Transition || this.DefaultTransition || Monaco.Transition,
+            transition = new TransitionClass(currentView, targetView);
+
         this.currentView = transition.start(options);
     };
 
