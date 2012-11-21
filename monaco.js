@@ -636,7 +636,7 @@
                 this.fromView.close();
             }
             if (_.has(options, 'scrollTop')) {
-                document.body.scrollTop = options.scrollTop;
+                window.scrollTo(0, options.scrollTop);
             }
             return this.toView;
         }
