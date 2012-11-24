@@ -633,8 +633,8 @@
             options = options || {};
             var _self = this;
             this.toView.render(options);
-            this.toView.$el.hide();
             if (this.fromView) {
+                this.toView.$el.hide();
                 this.fromView.$el.addClass('fadeOut');
                 var wait = window.setTimeout( function() {
                     _self.fromView.close();
