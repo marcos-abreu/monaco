@@ -631,9 +631,15 @@
         //      return the new view (!important)
         start : function(options) {
             options = options || {};
-            this.toView.render(options);
-            if (this.fromView && this.toView.el !== this.fromView.el) {
+            if (this.fromView && this.toView.el === this.fromView.el) {
                 this.fromView.close();
+                this.toView.render(options);
+            }
+            else if (this.fromView) {
+                this.toView.render(options);
+                this.fromView.close();
+            } else {
+                this.toView.render(options);
             }
             if (_.has(options, 'scrollTop')) {
                 window.scrollTo(0, options.scrollTop);
