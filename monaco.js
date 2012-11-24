@@ -631,10 +631,16 @@
         //      return the new view (!important)
         start : function(options) {
             options = options || {};
-            if (this.fromView) {
-                this.fromView.close();
-            }
+            var _self = this;
             this.toView.render(options);
+            this.toView.$el.hide();
+            if (this.fromView) {
+                this.fromView.$el.addClass('fadeOut');
+                var wait = window.setTimeout( function() {
+                    _self.fromView.close();
+                    _self.toView.$el.show();
+                }, 1100);
+            }
             if (_.has(options, 'scrollTop')) {
                 window.scrollTo(0, options.scrollTop);
             }
