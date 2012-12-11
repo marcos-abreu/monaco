@@ -7,6 +7,87 @@
     // top level namespace
     var Monaco = root.Monaco = {};
 
+
+    // simple pool to keep track of pending ajax requests
+    // like a queue except there is no ordering of requests
+    var RequestPool = (function() {
+        function RequestPool() {
+            this._pool = {};
+            this.size = 0;
+        }
+
+        /**
+         * push an item into the pool
+         */
+        RequestPool.prototype.push = function(key, item) {
+            if(typeof app.requestPool.sniff(key) === 'undefined') {
+                // only increment the size if the item is not already in the pool
+                this.size++;
+            }
+            return this._pool[key] = item;
+        }
+
+        /**
+         * pop an item out of the pool
+         */
+        RequestPool.prototype.pop = function(key) {
+            if(this._pool[key]) {
+                this.size--;
+                var item = this._pool[key];
+                delete this._pool[key];
+                return item
+            }
+            return false;
+        }
+
+        /**
+         * sniff an item in the pool without removing it
+         */
+        RequestPool.prototype.sniff = function(key) {
+            return this._pool[key];
+        }
+
+        /** ************************** 
+         * clears the request pool of any pending requests, 
+         *  regardless of if they have executed or not.
+         *  Will not abort any dangerous requests (delete, update, etc)
+         *
+         * return:  true  - if successful
+         *          false - if it cannot clear a request
+         */
+        RequestPool.prototype.clear = function() {
+            var return_val = true;
+            _.each(this.keys(), function(key, index) {
+                var item = this._pool[key];
+
+                if(_.has(item, 'type')) {
+                    // ajax request
+                    if(item.type === 'read' && (item.XHR['read'].readyState !== 4)) {
+                        this.pop(key).XHR['read'].abort('stale');
+                    }
+                    else {
+                        return_val = false;
+                    }
+                }
+                else {
+                    this.pop(key);
+                }
+            }, this);
+            return return_val;
+
+        // lastXHR = app.lastRequest.XHR && app.lastRequest.XHR[method]
+        // if(app.lastRequest.type === 'read' 
+        //     && (lastXHR && lastXHR.readyState !== 4) 
+        //     lastXHR.abort('stale');
+        // }
+        }
+
+        RequestPool.prototype.keys = function() {
+            return _.keys(this._pool);
+        }
+        return RequestPool;
+    })();
+
     /* -- UTILITIES ------------------------------------------------------------ */
 
     // shared empty constructor function to aid in prototype-chain creation.
@@ -42,6 +123,15 @@
             requestQueue = [],
             success = groupOptions.success,
             errror = groupOptions.error;
+
+        // cleanup any pending ajax requests
+        if( app.requestPool.size > 0) {
+            app.requestPool.clear();
+        }
+        // add requests to pool
+        _.each(collections, function(collection, index, collections) {
+            app.requestPool.push(collection.resource, collection)
+        }, this);
 
         // success and error callbacks of each collection.fetch calls
         var complete = function(collection, resp, options) {
@@ -82,8 +172,11 @@
         var cid = _.uniqueId('mf-'),
             mfId = cid+'|'+_.size(collections);
 
-        _.each(collections, function(collection, index, collections) {
-            var fetchOptions = _.clone(groupOptions);
+        _.each(app.requestPool.keys(), function(key, index) {
+            var fetchOptions = _.clone(groupOptions),
+                collection = app.requestPool.sniff(key);
+                // console.log(key);
+                // console.log(collection);
             fetchOptions.multiFetch = (index+1)+'/'+mfId;
 
             requestQueue.push(collection.fetch(fetchOptions));
@@ -109,14 +202,13 @@
     /* -- APPLICATION ---------------------------------------------------------- */
     // Application Structure
     var Application = Monaco.Application = function(options) {
-        this.model      = {};        // model list
-        this.collection = {};        // collection list
-        this.view       = {};        // views list
-        this.transition = {};        // view transition list
+        this.model       = {};        // model list
+        this.collection  = {};        // collection list
+        this.view        = {};        // views list
+        this.transition  = {};        // view transition list
+        this.requestPool = new RequestPool();        // pool of pending ajax requests
 
-        this.settings   = {};
-
-        this.options    = options || {};
+        this.options = options || {};
 
         Monaco.dispatcher.trigger('application:build', this, this.options);
     };
@@ -143,30 +235,6 @@
         this.currentView = transition.start(options);
     };
 
-    Application.prototype.get = function( key ) {
-        if ( _.has ( app.settings, key ) ) {
-            return app.settings[key];
-        }
-        // todo account for localStorage not being supported
-        var result = JSON.parse( window.localStorage.getItem( key ) );
-        if (result === null ) {
-            return void 0;
-        }
-        app.settings[key] = result;
-        return result;
-    };
-
-    Application.prototype.set = function ( key, value, persist ) {
-        persist = persist || false;
-        // account for localstorage not being supported
-        if ( key === void 0 || value === void 0) {
-            console.log('error setting app variable - key and value are both required parameters');
-        }
-        if ( persist ) {
-            window.localStorage.setItem( key, JSON.stringify( value ) );
-        }
-        app.settings[key] = value;
-    };
 
     /* -- ROUTER --------------------------------------------------------------- */
     // extended backbone router class
@@ -546,10 +614,29 @@
     Backbone.sync = function(method, model, options) {
         options = options || {};
 
+        // console.log( 'resouce: ' + (model.resource || model.collection.resource || null));
+        // console.log( 'url : ' + _.result(model, 'url'));
+
+        var key = model.resource || model.collection.resource;
+
+        if((app.requestPool.size > 0) && (typeof app.requestPool.sniff(key) === 'undefined')) {
+            // if the request is already present, then it's a multiFetch and 
+            //  any pending requests have already been aborted and
+            //  any requests in the pool are part of the current multiFetch
+            if(options.abortPending === true) {
+                if(app.requestPool.clear() === false) {
+                    // request cannot be aborted (dangerous operation to cancel)
+                }   
+            }
+        }
+
         if (method == 'read') {
+
             data = (options.fresh === true) ? null : Monaco.local.get(model);
             if (data) {
                 data._origin = 'local';
+                app.requestPool.pop(key);
+
                 if (options.success) {
                     options.success(data);
                 }
@@ -560,19 +647,39 @@
                  (! _.has(options, 'cacheLocal') && model.cacheLocal === true) ||
                  (! _.has(options, 'cacheLocal') && ! _.has(model, 'cacheLocal') && Monaco.local.autoCache === true)) {
 
-                var success = options.success,
+                var oldSuccess = options.success,
                     obj = model;
-                options.success = function(resp, status, xhr) {
+                options.success = function(resp, xhr, opt) {
                     Monaco.local.set(obj, resp);
-                    if (success) {
-                        success.apply(this, arguments);
+                    if (oldSuccess) {
+                        oldSuccess.apply(this, arguments);
                     }
                 };
             }
-        }
 
-        console.log('## ajax call');
-        return Monaco.sync(method, model, options);
+            var success = options.success,
+                error = options.error,
+                complete = function(resp, xhr, opt) {
+                    // 
+                    app.requestPool.pop(key);
+
+                    if ( typeof xhr === 'object' && (xhr.readyState != 4 && xhr.status !== 200) && options.error) {
+                        // failure
+                        error.apply(this, arguments);
+
+                    } 
+                    else if(options.success) { 
+                        // success
+                        success.apply(this, arguments);
+                    }
+                };
+
+            options.success = complete;
+            options.error = complete;
+        }
+        console.log('## ajax'); 
+        request = app.requestPool.push(key, { type: method, XHR: {} })
+        return request.XHR[method] = Monaco.sync(method, model, options);
     };
 
     /* -- FORM ----------------------------------------------------------------- */
@@ -685,4 +792,5 @@
         }
         return null;
     };
+
 }(window));
