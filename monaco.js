@@ -10,27 +10,29 @@
 
     // simple pool to keep track of pending ajax requests
     // like a queue except there is no ordering of requests
-    var RequestPool = (function() {
-        function RequestPool() {
-            this._pool = {};
-            this.size = 0;
-        }
+
+    var RequestPool = function() {
+        this._pool = {};
+        this.size = 0;
+    }
+
+    RequestPool.prototype = {
 
         /**
          * push an item into the pool
          */
-        RequestPool.prototype.push = function(key, item) {
-            if(typeof app.requestPool.sniff(key) === 'undefined') {
+        push : function(key, item) {
+            if(typeof app.requestPool.peek(key) === 'undefined') {
                 // only increment the size if the item is not already in the pool
                 this.size++;
             }
             return this._pool[key] = item;
-        }
+        },
 
         /**
          * pop an item out of the pool
          */
-        RequestPool.prototype.pop = function(key) {
+        pop : function(key) {
             if(this._pool[key]) {
                 this.size--;
                 var item = this._pool[key];
@@ -38,14 +40,14 @@
                 return item
             }
             return false;
-        }
+        },
 
         /**
-         * sniff an item in the pool without removing it
+         * peek into the pool to see if an item exists without removing it
          */
-        RequestPool.prototype.sniff = function(key) {
+        peek : function(key) {
             return this._pool[key];
-        }
+        },
 
         /** ************************** 
          * clears the request pool of any pending requests, 
@@ -54,8 +56,8 @@
          *
          * return:  true  - if successful
          *          false - if it cannot clear a request
-         */
-        RequestPool.prototype.clear = function() {
+         */ 
+        clear : function() {
             var return_val = true;
             _.each(this.keys(), function(key, index) {
                 var item = this._pool[key];
@@ -74,19 +76,12 @@
                 }
             }, this);
             return return_val;
+        },
 
-        // lastXHR = app.lastRequest.XHR && app.lastRequest.XHR[method]
-        // if(app.lastRequest.type === 'read' 
-        //     && (lastXHR && lastXHR.readyState !== 4) 
-        //     lastXHR.abort('stale');
-        // }
-        }
-
-        RequestPool.prototype.keys = function() {
+        keys : function() {
             return _.keys(this._pool);
         }
-        return RequestPool;
-    })();
+    }
 
     /* -- UTILITIES ------------------------------------------------------------ */
 
@@ -174,7 +169,7 @@
 
         _.each(app.requestPool.keys(), function(key, index) {
             var fetchOptions = _.clone(groupOptions),
-                collection = app.requestPool.sniff(key);
+                collection = app.requestPool.peek(key);
                 // console.log(key);
                 // console.log(collection);
             fetchOptions.multiFetch = (index+1)+'/'+mfId;
@@ -619,7 +614,7 @@
 
         var key = model.resource || model.collection.resource;
 
-        if((app.requestPool.size > 0) && (typeof app.requestPool.sniff(key) === 'undefined')) {
+        if((app.requestPool.size > 0) && (typeof app.requestPool.peek(key) === 'undefined')) {
             // if the request is already present, then it's a multiFetch and 
             //  any pending requests have already been aborted and
             //  any requests in the pool are part of the current multiFetch
