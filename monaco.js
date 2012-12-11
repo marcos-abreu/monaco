@@ -203,7 +203,8 @@
         this.transition  = {};        // view transition list
         this.requestPool = new RequestPool();        // pool of pending ajax requests
 
-        this.options = options || {};
+        this.settings    = {};
+        this.options     = options || {};
 
         Monaco.dispatcher.trigger('application:build', this, this.options);
     };
@@ -228,6 +229,31 @@
             transition = new TransitionClass(currentView, targetView);
 
         this.currentView = transition.start(options);
+    };
+
+    Application.prototype.get = function( key ) {
+        if ( _.has ( app.settings, key ) ) {
+            return app.settings[key];
+        }
+        // todo account for localStorage not being supported
+        var result = JSON.parse( window.localStorage.getItem( key ) );
+        if (result === null ) {
+            return void 0;
+        }
+        app.settings[key] = result;
+        return result;
+    };
+
+    Application.prototype.set = function ( key, value, persist ) {
+        persist = persist || false;
+        // account for localstorage not being supported
+        if ( key === void 0 || value === void 0) {
+            console.log('error setting app variable - key and value are both required parameters');
+        }
+        if ( persist ) {
+            window.localStorage.setItem( key, JSON.stringify( value ) );
+        }
+        app.settings[key] = value;
     };
 
 
