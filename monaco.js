@@ -14,7 +14,7 @@
     var RequestPool = function() {
         this._pool = {};
         this.size = 0;
-    }
+    };
 
     RequestPool.prototype = {
 
@@ -22,7 +22,7 @@
          * push an item into the pool
          */
         push : function(key, item) {
-            if(typeof app.requestPool.peek(key) === 'undefined') {
+            if(!_.has(this.pool, key)) {
                 // only increment the size if the item is not already in the pool
                 this.size++;
             }
@@ -30,10 +30,10 @@
         },
 
         /**
-         * pop an item out of the pool
+         * remove an item from the pool
          */
-        pop : function(key) {
-            if(this._pool[key]) {
+        remove : function(key) {
+            if(_.has(this._pool, key)) {
                 this.size--;
                 var item = this._pool[key];
                 delete this._pool[key];
@@ -45,43 +45,40 @@
         /**
          * peek into the pool to see if an item exists without removing it
          */
-        peek : function(key) {
-            return this._pool[key];
+        get : function(key) {
+            if(_.has(this._pool, key)) {
+                return this._pool[key];
+            }
+            return false;
         },
 
         /** ************************** 
          * clears the request pool of any pending requests, 
-         *  regardless of if they have executed or not.
-         *  Will not abort any dangerous requests (delete, update, etc)
+         *      regardless of if they have executed or not.
+         *      Will not abort any dangerous requests (delete, update, etc)
          *
-         * return:  true  - if successful
-         *          false - if it cannot clear a request
+         * return:  a list of the keys in the pool
+         *              empty list if all requests abort successfully
+         *              a list of keys if any requests fail to abort
          */ 
-        clear : function() {
-            var return_val = true;
+        abortAll : function() {
             _.each(this.keys(), function(key, index) {
                 var item = this._pool[key];
 
-                if(_.has(item, 'type')) {
-                    // ajax request
-                    if(item.type === 'read' && (item.XHR['read'].readyState !== 4)) {
-                        this.pop(key).XHR['read'].abort('stale');
-                    }
-                    else {
-                        return_val = false;
-                    }
+                if(_.has(item, 'type') && item.type === 'read' && (item.XHR['read'].readyState !== 4)) {
+                        this.remove(key).XHR['read'].abort('stale');
                 }
                 else {
-                    this.pop(key);
+                    this.remove(key);
                 }
             }, this);
-            return return_val;
+            return this.keys();
         },
 
         keys : function() {
             return _.keys(this._pool);
         }
-    }
+    };
 
     /* -- UTILITIES ------------------------------------------------------------ */
 
@@ -121,11 +118,11 @@
 
         // cleanup any pending ajax requests
         if( app.requestPool.size > 0) {
-            app.requestPool.clear();
+            app.requestPool.abortAll();
         }
         // add requests to pool
         _.each(collections, function(collection, index, collections) {
-            app.requestPool.push(collection.resource, collection)
+            app.requestPool.push(collection.resource, collection);
         }, this);
 
         // success and error callbacks of each collection.fetch calls
@@ -168,20 +165,22 @@
             mfId = cid+'|'+_.size(collections);
 
         _.each(app.requestPool.keys(), function(key, index) {
-            var fetchOptions = _.clone(groupOptions),
-                collection = app.requestPool.peek(key);
-                // console.log(key);
-                // console.log(collection);
-            fetchOptions.multiFetch = (index+1)+'/'+mfId;
+            var collection = app.requestPool.get(key);
+            if(collection !== false) {
+                var fetchOptions = _.clone(groupOptions);
+                    // console.log(key);
+                    // console.log(collection);
+                fetchOptions.multiFetch = (index+1)+'/'+mfId;
 
-            requestQueue.push(collection.fetch(fetchOptions));
+                requestQueue.push(collection.fetch(fetchOptions));
 
-            var lastItem = requestQueue.length - 1;
-            // if data from local caching
-            if (requestQueue[lastItem] === true) {
-                requestQueue = requestQueue.slice(0, -1);
-            } else {
-                requestQueue[lastItem].resource = collection.resource;
+                var lastItem = requestQueue.length - 1;
+                // if data from local caching
+                if (requestQueue[lastItem] === true) {
+                    requestQueue = requestQueue.slice(0, -1);
+                } else {
+                    requestQueue[lastItem].resource = collection.resource;
+                }
             }
         }, this);
 
@@ -640,12 +639,12 @@
 
         var key = model.resource || model.collection.resource;
 
-        if((app.requestPool.size > 0) && (typeof app.requestPool.peek(key) === 'undefined')) {
+        if((app.requestPool.size > 0) && (typeof app.requestPool.get(key) === 'undefined')) {
             // if the request is already present, then it's a multiFetch and 
             //  any pending requests have already been aborted and
             //  any requests in the pool are part of the current multiFetch
             if(options.abortPending === true) {
-                if(app.requestPool.clear() === false) {
+                if(app.requestPool.abortAll() === false) {
                     // request cannot be aborted (dangerous operation to cancel)
                 }   
             }
@@ -656,7 +655,7 @@
             data = (options.fresh === true) ? null : Monaco.local.get(model);
             if (data) {
                 data._origin = 'local';
-                app.requestPool.pop(key);
+                app.requestPool.remove(key);
 
                 if (options.success) {
                     options.success(data);
@@ -668,28 +667,28 @@
                  (! _.has(options, 'cacheLocal') && model.cacheLocal === true) ||
                  (! _.has(options, 'cacheLocal') && ! _.has(model, 'cacheLocal') && Monaco.local.autoCache === true)) {
 
-                var oldSuccess = options.success,
+                var originalSuccess = options.success,
                     obj = model;
-                options.success = function(resp, xhr, opt) {
+                options.success = function(resp, status, xhr) {
                     Monaco.local.set(obj, resp);
-                    if (oldSuccess) {
-                        oldSuccess.apply(this, arguments);
+                    if (originalSuccess) {
+                        originalSuccess.apply(this, arguments);
                     }
                 };
             }
 
             var success = options.success,
                 error = options.error,
-                complete = function(resp, xhr, opt) {
+                complete = function(resp, status, xhr) {
                     // 
-                    app.requestPool.pop(key);
+                    app.requestPool.remove(key);
 
-                    if ( typeof xhr === 'object' && (xhr.readyState != 4 && xhr.status !== 200) && options.error) {
+                    if ( typeof status === 'object' && (status.readyState != 4 && status.status !== 200) && error) {
                         // failure
                         error.apply(this, arguments);
 
                     } 
-                    else if(options.success) { 
+                    else if(success) { 
                         // success
                         success.apply(this, arguments);
                     }
