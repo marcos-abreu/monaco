@@ -613,9 +613,9 @@
 
         abort : function (key) {
             if (key === void 0) {
-                return this._abortAll(null);
+                return this._abortAll();
             }
-            if (typeof key !== 'string') {
+            if (!_.isString(key)) {
                 return this._abortAll(null, key);
             }
             return this._abort(key);
@@ -628,7 +628,7 @@
         _abort : function (key, method) {
             var request = this.get(key);
             if (!request || request.readyState === 4 || 
-                 (method !== null && request.method !== method)) {
+                 (method && request.method !== method)) {
                 return false;
             }
             request.abort('stale');
@@ -636,10 +636,11 @@
         },
 
         _abortAll : function (method, options) {
-            var failed_abortions = Array();
+            var failed_abortions = [];
+            
             this.each(function(request, key) {
                 var group = this.get(key).group;
-                if(group === this._extractGroupID(options.mfid) && group !== void 0) {
+                if(group && options.mfid && group === this._extractGroupID(options.mfid)) {
                     return;   //skip aborting this request since it's part of the same group
                 }
 
