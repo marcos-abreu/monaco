@@ -280,8 +280,10 @@
 
         // default render method that renders the template by appending it to the `el`
         render : function(data) {
-            data = data || (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : null));
-            $(this.el).append(this.template(data));
+            if ( this.template ) {
+                data = data || (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : null));
+                $(this.el).append( this.template(data)  );
+            }
             return this;
         },
 
