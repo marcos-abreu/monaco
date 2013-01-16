@@ -300,7 +300,7 @@
         // http://lostechies.com/derickbailey/2011/09/15/zombies-run-managing-page-transitions-in-backbone-apps/
         close : function() {
             this.dispose();
-            $(this.el).remove(); // remove all child nodes - jQuery dependent
+            $(this.el).remove(); // remove the view from the DOM - jQuery dependent
         }
     });
 
