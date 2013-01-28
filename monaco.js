@@ -573,8 +573,10 @@
             }
         }
 
-        console.log('## ajax call');
-        return Monaco.sync(method, model, options);
+        if ( !options.localOnly ) {
+            console.log('## ajax call');
+            return Monaco.sync(method, model, options);
+        }
     };
 
     /* -- FORM ----------------------------------------------------------------- */
