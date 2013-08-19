@@ -14,7 +14,7 @@ Even if you decide to use all modules available, *Monaco* is just 4.5kb (minifie
 
 - **monaco-app** - this is the core and the only required module of *Monaco*; responsible for the managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
 
-- **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - learn more.
+- **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - [learn more](docs/monaco-local.md).
 
 - **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - learn more.
 
