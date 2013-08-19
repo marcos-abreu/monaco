@@ -1,43 +1,47 @@
-monaco
-======
+Monaco
+====
 
-Monaco is a web application framework build on top of the incredible backbone.js (https://github.com/documentcloud/backbone), giving it a more defined application archteture.
+*Monaco* is a web application framework, built on top of the marvelous backbone.js, that offers a non-opinionated solution for developing small and large scale front-end applications.
 
-dependencies
-------------
+Backbone is great as it stands, and offers the developer the ability to architect a solution any way it is needed, what is great, but it doesn’t offer a structure to tie the application code together, or to deal with common problems developers face on almost every app they build, such as local caching, or analytics integration, etc; All of that makes building applications much harder than it should be, *Monaco* is my take on solving these problems without forcing a develop to follow this or that convention.
 
-- backbone.js (and all its dependencies)
-- underscoer.js (preferably lo-dash)
-- DOM selector (CSS Selector) library - TODO: verify how to remove/reduce this dependency
+Monaco Modules
+----
 
-features
---------
+To accomplish all of that *Monaco* is divided into modules, where you can opt to use all of just some of them; whatever is needed to accomplish the task in hand. Each module is designed to help you active a specific requirement of your application.
 
-- application object with a centralized dispatcher
+Even if you decide to use all modules available, *Monaco* is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
 
-- local caching collection data - allowing you to keep the data fetched from a collection locally (memory and/or localStorage), therefore reducing the number of calls to the server
+- **monaco-app** - this is the core and the only required module of *Monaco*; responsible for the managing the application object and all elements added to it - learn more.
 
-- default view - with a default render that appends the content to the page and a default close method that unbinds all events and remove the element to the page
+- **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - learn more.
 
-- inner views - easy and flexible way of including subviews inside of your view
+- **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - learn more.
 
-- helpers that make your life as a developer easier, such as: fetchCollections, ...
+- **monaco-views** - this module help you organize master views (screen views) and their subviews - learn more.
 
-- easier way to define regular expression routes
+- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition can be implemented using either javascript or css; or both - learn more.
 
-- automatically pass any query string parameters as an object to the callback function
+- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - learn more.
 
-- flexible transition engine that allows you to move from view to view - use the transitions that comes with Monaco or build your own transitions.
+- **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - learn more.
 
-- validation (input and model) engine that allows you to easily maintain the state of the data that flows into your application
-
-- flexible form engine to facilitate the integration between input, validation and model storage
-
-- scafolding that gives you a quick start on building your application
+- **monaco-split-tests** - this module allows you to create split tests and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - learn more.
 
 
-Usage
------
+Monaco Command Line Interface (monaco-cli)
+----
 
-Please check the `docs/monaco-usage.md` to have an overview of how to use Monaco to build your app.
+On top of all the features described above, *Monaco* also provides a really handy command line interface, that allows you get started with your projects and prototypes really fast. The use of **monaco-cli** is not required and you can build your apps using whatever structure of files and folders you want, but this tool is really handy if you need help creating project file structure for your application. Learn more.
 
+
+License
+----
+
+*Monaco* is freely distributable under the terms of the MIT license.
+
+Copyright(c) 2011-2013 Marcos Abreu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
