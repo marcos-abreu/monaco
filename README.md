@@ -16,17 +16,17 @@ Even if you decide to use all modules available, *Monaco* is just 4.5kb (minifie
 
 - **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - [learn more](docs/monaco-local.md).
 
-- **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - learn more.
+- **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - [learn more](docs/monaco-router.md).
 
-- **monaco-views** - this module help you organize master views (screen views) and their subviews - learn more.
+- **monaco-views** - this module help you organize master views (screen views) and their subviews - [learn more](docs/monaco-views.md).
 
-- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition can be implemented using either javascript or css; or both - learn more.
+- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition can be implemented using either javascript or css; or both - [learn more](docs/monaco-transitions.md).
 
-- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - learn more.
+- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - [learn more](docs/monaco-multirequest.md).
 
-- **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - learn more.
+- **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - [learn more](docs/monaco-analytics.md).
 
-- **monaco-split-tests** - this module allows you to create split tests and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - learn more.
+- **monaco-split-tests** - this module allows you to create split tests and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - [learn more](docs/monaco-split-tests.md).
 
 
 Monaco Command Line Interface (monaco-cli)
