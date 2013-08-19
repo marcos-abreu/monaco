@@ -12,7 +12,7 @@ To accomplish all of that *Monaco* is divided into modules, where you can opt to
 
 Even if you decide to use all modules available, *Monaco* is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
 
-- **monaco-app** - this is the core and the only required module of *Monaco*; responsible for the managing the application object and all elements added to it - learn more.
+- **monaco-app** - this is the core and the only required module of *Monaco*; responsible for the managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
 
 - **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - learn more.
 
