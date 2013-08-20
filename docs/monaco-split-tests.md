@@ -63,8 +63,8 @@ sample:
     app.split();
 
     app.addRoutes({
-        '^users\\/(\\d+)\\/?$'                     : [app.tests[‘profile-friends’].controller('userProfile'),  'user:profile'],
-        '^users\\/(\\d+)\\/videos\\/?$'       : ['userVideos',                                                               'user:videos']
+        '^users\\/(\\d+)\\/?$'           : [app.tests[‘profile-friends’].controller('userProfile'),  'user:profile'],
+        '^users\\/(\\d+)\\/videos\\/?$'  : ['userVideos',                                            'user:videos']
     });
     
     app.addController('userProfile', function(userId) {
