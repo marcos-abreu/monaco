@@ -16,13 +16,13 @@ Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (min
 
 - **monaco-app** - this is the core and the only required module of ***Monaco***; responsible for the managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
 
-- **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - [learn more](docs/monaco-local.md).
+- **monaco-local** - this module creates a local caching system that can be used to help you architect your application caching strategy - [learn more](docs/monaco-local.md).
 
 - **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - [learn more](docs/monaco-router.md).
 
 - **monaco-views** - this module help you organize master views (screen views) and their subviews - [learn more](docs/monaco-views.md).
 
-- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition can be implemented using either javascript or css; or both - [learn more](docs/monaco-transitions.md).
+- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition effect can be implemented whatever technology it is required (e.g: javascript, css, or both) - [learn more](docs/monaco-transitions.md).
 
 - **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - [learn more](docs/monaco-multirequest.md).
 
@@ -34,7 +34,7 @@ Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (min
 ***Monaco*** Command Line Interface (monaco-cli)
 ----
 
-On top of all the features described above, ***Monaco*** also provides a really handy command line interface, that allows you get started with your projects and prototypes really fast. The use of **monaco-cli** is not required and you can build your apps using whatever structure of files and folders you want, but this tool is really handy if you need help creating project file structure for your application. Learn more.
+On top of all the features described above, ***Monaco*** also provides a really handy command line interface, that allows you get started with your projects and prototypes really fast. The use of **monaco-cli** is not required and you can build your apps using whatever structure of files and folders you want, but this tool is really handy if you need help creating project file structure for your application. [Learn more](/docs/monaco-cli.md).
 
 
 License
