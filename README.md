@@ -1,18 +1,20 @@
-Monaco
+***Monaco***
 ====
 
-*Monaco* is a web application framework, built on top of the marvelous backbone.js, that offers a non-opinionated solution for developing small and large scale front-end applications.
+***Monaco*** is a web application framework, built on top of the marvelous backbone.js, that offers a non-opinionated solution for developing small and large scale front-end applications.
 
-Backbone is great as it stands, and offers the developer the ability to architect a solution any way it is needed, what is great, but it doesn’t offer a structure to tie the application code together, or to deal with common problems developers face on almost every app they build, such as local caching, or analytics integration, etc; All of that makes building applications much harder than it should be, *Monaco* is my take on solving these problems without forcing a develop to follow this or that convention.
+Backbone is great as it stands, and offers the developer the ability to architect a solution any way it is needed, what is great, but it doesn’t offer a structure to tie the application code together, or to deal with common problems developers face on almost every app they build, such as local caching, or analytics integration, etc; All of that makes building applications much harder than it should be, ***Monaco*** is my take on solving these problems without forcing a develop to follow this or that convention.
 
-Monaco Modules
+To learn more about how ***Monaco*** works read the [getting started](/docs/getting-started.md) and the [platform overview](/docs/platform-overview.md) docs.
+
+***Monaco*** Modules
 ----
 
-To accomplish all of that *Monaco* is divided into modules, where you can opt to use all of just some of them; whatever is needed to accomplish the task in hand. Each module is designed to help you active a specific requirement of your application.
+To accomplish all of that ***Monaco*** is divided into modules, where you can opt to use all of just some of them; whatever is needed to accomplish the task in hand. Each module is designed to help you active a specific requirement of your application.
 
-Even if you decide to use all modules available, *Monaco* is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
+Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
 
-- **monaco-app** - this is the core and the only required module of *Monaco*; responsible for the managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
+- **monaco-app** - this is the core and the only required module of ***Monaco***; responsible for the managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
 
 - **monaco-local** - this module creates a local caching system that can be used to architect your application caching strategy - [learn more](docs/monaco-local.md).
 
@@ -29,16 +31,16 @@ Even if you decide to use all modules available, *Monaco* is just 4.5kb (minifie
 - **monaco-split-tests** - this module allows you to create split tests and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - [learn more](docs/monaco-split-tests.md).
 
 
-Monaco Command Line Interface (monaco-cli)
+***Monaco*** Command Line Interface (monaco-cli)
 ----
 
-On top of all the features described above, *Monaco* also provides a really handy command line interface, that allows you get started with your projects and prototypes really fast. The use of **monaco-cli** is not required and you can build your apps using whatever structure of files and folders you want, but this tool is really handy if you need help creating project file structure for your application. Learn more.
+On top of all the features described above, ***Monaco*** also provides a really handy command line interface, that allows you get started with your projects and prototypes really fast. The use of **monaco-cli** is not required and you can build your apps using whatever structure of files and folders you want, but this tool is really handy if you need help creating project file structure for your application. Learn more.
 
 
 License
 ----
 
-*Monaco* is freely distributable under the terms of the MIT license.
+***Monaco*** is freely distributable under the terms of the MIT license.
 
 Copyright(c) 2011-2013 Marcos Abreu
 
