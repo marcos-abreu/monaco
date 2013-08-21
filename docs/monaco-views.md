@@ -5,13 +5,13 @@ Views and subviews management are a key features of complex applications. Instea
 
 **monaco-views** can help you manage complex views by simplifying the use of subviews in a *master view*. A *master view* is just a normal view with a list of subviews; subviews can have their own subviews becoming the *master view* of their subviews. When listing subviews you will use the following format:
 
-**important**: during the examples below I’m going to use `Handlebars` as my template engine, you are free to use any template engine your project requires.
+**important**: during the examples below I'm going to use `Handlebars` as my template engine, you are free to use any template engine your project requires.
 
-    app.add(‘MasterView’, Monaco.View.extend({
+    app.add('MasterView', Monaco.View.extend({
         …
         views : {
-            ‘#css-selector’ : { template: Handlebars.templates[‘my-template’] },
-	‘.css-selector’  : { template: Handlebars.templates[‘my-other-template’]}
+            '#css-selector' : { template: Handlebars.templates['my-template'] },
+	    '.css-selector' : { template: Handlebars.templates['my-other-template'] }
         }
         …
     }));
@@ -35,13 +35,13 @@ The following are the options you can pass for each subview:
 Creating simple subviews
 ----
 
-The simplest type of subview are the ones that don’t have a specified view class (`viewClass`) associated with them, they just have a template and will be created automatically by **monaco-views** (using the base `Monaco.View` class) as soon as the *master view* is created; it will be rendered as soon as the *master view* is rendered; and removed just before the *master view* gets removed.
+The simplest type of subview are the ones that don't have a specified view class (`viewClass`) associated with them, they just have a `template` and will be created automatically by **monaco-views** (using the base `Monaco.View` class) as soon as the *master view* is created; it will be rendered as soon as the *master view* is rendered; and removed just before the *master view* gets removed.
 
     var app = new Monaco.Application('mobile');
 
     var app.add('UserProfile', Monaco.View.extend({
         ...
-        template: Handlebars.templates[‘user.profile’],
+        template: Handlebars.templates['user.profile'],
         views : {
             '#profile-status'  : { template: Handlebars.templates['user.profile-status'] },
             '#featured-videos' : { template: Handlebars.templates['user.featured-videos'] },
@@ -50,10 +50,10 @@ The simplest type of subview are the ones that don’t have a specified view cla
         ...
     }));
 
-The code above created a sample Monaco application `app`;  then added the ‘UserProfile’ view to the application with a list of three subviews using the `views` property; each one with a key as a css selector and the value as a literal object with options for the subview. In this example the only option for each of the subviews is their `template` what means that they will be created using the `Monaco.View` class.
+The code above created a sample Monaco application `app`;  then added the `UserProfile` view to the application with a list of three subviews using the `views` property; each one with a key as a css selector and the value as a literal object with options for the subview. In this example the only option for each of the subviews is their `template` what means that they will be created using the base `Monaco.View` class.
 
 ----
-Following the previous example whenever we instantiate a new `UserProfile` view object we will create instances of each one of the subviews listed.
+Following the previous example whenever we instantiate a new `UserProfile` view object we will create instances of each one of its subviews.
 
     var profile = new app.views.UserProfile();
 
@@ -71,11 +71,11 @@ Whenever we remove the `UserProfile` instance object the instance of the subview
 Adding Complex Subviews
 ----
 
-When a subview is complex enough to have its own behaviour (needs their own view classes), we can still use **monaco-views** to manage them.
+When a subview is complex enough to have its own behaviour (needs their own view class), we can accomplish this using the `viewClass` property.
 
     var app = new Monaco.Application('mobile');
 
-    app.add(‘ProfileFriends’, Monaco.View.extend({
+    app.add('ProfileFriends', Monaco.View.extend({
         // logic from the profile views class
     }));
 
@@ -93,10 +93,10 @@ The example above is almost the same as the previous one, the only difference is
 
 By using this method of assigning a `viewClass` to a subview you have the ability to completely control the behaviour of the subview.
 
-Rendering one subview for each model of a view's collection
+One subview for each model of a view's collection
 ----
 
-Often we need to use subviews to render each one of the view collection’s models. The can be accomplished in **monaco-views** as demonstrated below:
+Often we need to use subviews to render each one of the view collection's models. This can be accomplished in **monaco-views** as demonstrated below:
 
     var app = new Monaco.Application('mobile');
     app.add('UserVideoList', Monaco.View.extend({
@@ -107,7 +107,7 @@ Often we need to use subviews to render each one of the view collection’s mode
         ...
     }));
 
-The `collectionItem` *boolean* property indicates if this subview should be rendered once for each model inside of the view’s collection.
+The `collectionItem` *boolean* property when set to `true` (`false` by default) indicates that this subview should be rendered once for each model inside of the view's collection.
 
 If the collection you want to iterate is not the main collection of the view you could:
 
@@ -129,9 +129,9 @@ If the collection you want to iterate is not the main collection of the view you
         ...
     }));
 
-By using the `collectionItem` and `collection` properties together in the code above the `this.videoList` won’t be assigned to the subview as its collection, but instead for each of the `this.videoList` models one subview will be rendered.
+By using the `collectionItem` and `collection` properties together in the code above the `this.videoList` won't be assigned to the subview as its collection, but instead for each of the `this.videoList` models one subview will be rendered.
 
-The previous two examples I’ve used simple subviews (just listed the template they will be using), but you can accomplish the same thing with more complex subviews where you need to control their behaviour. Just use the `viewClass` property as explained before.
+The previous two examples I've used simple subviews (just listed the `template` they will be using), but you can accomplish the same thing with more complex subviews where you need to control their behaviour. Just use the `viewClass` property as explained before.
 
     var app = new Monaco.Application('mobile');
     
@@ -156,7 +156,7 @@ The previous two examples I’ve used simple subviews (just listed the template 
 Accessing Specific Subviews
 ----
 
-**monaco-views** gives you access to each subviews through the `children` property. Lets say for example that based on a user click you want one of the subviews to re-render itself.
+**monaco-views** gives you access to each subviews through the view's `children` property. Lets say for example that based on a user click you want one of the subviews to re-render itself.
 
     var app = new Monaco.Application('mobile');
 
@@ -185,7 +185,7 @@ Accessing Specific Subviews
     }));
 
 
-If you used the `collectionItem` assigned to `true`, then the `this.children[‘#css-selector’] will be an array of subviews.
+If you used the `collectionItem` assigned to `true`, then the `this.children['#css-selector']` will be an array of subviews.
 
 Accessing the *master view* from a subview
 ----
@@ -234,7 +234,7 @@ Advanced Use of **monaco-views**
 
 Sometimes you need to have control on when a specific subview is rendered, for that you can use the `autoRender` options setting it to `false` - this property is set to `true` by default.
 
-In this case the css selector assigned to the subview doesn’t need to be in the DOM tree by the time the *master view* is rendered.
+In this case the css selector assigned to the subview doesn't need to be in the DOM tree by the time the *master view* is rendered.
 
 
 ### add another subview dynamically
