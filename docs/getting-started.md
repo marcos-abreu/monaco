@@ -3,14 +3,14 @@ Getting Started
 
 The ***Monaco*** framework is based on **Backbonejs**, and therefore it has all of the features available in Backbonejs and more.
 
-***Monaco*** follows the same concepts of **Backbonejs**, where you create routes that when matched by the current url will trigger a function responsible for collection data, processing it and instanciating an object that can present the data on the user screen.
+***Monaco*** follows the same concepts of **Backbonejs**, where you create routes that when matched by the current url will trigger a function responsible for collecting data, processing it and instantiating an object that can present the data on the user screen.
 
-The main concepts of Backbonejs are *Router*, *Model*, *Collection*, *View*, and *Event*. Monaco extend each one of those elements adding its own functionality them, and also expose new ones, such as: *Application*, *Transition*, *Local*. Please check the [overview docs for more details](/docs/plataform-overview.md).
+The main concepts of Backbonejs are *Router*, *Model*, *Collection*, *View*, and *Event*. ***Monaco*** extend each one of those elements adding its own functionality to them, and also expose new ones, such as: *Application*, *Transition*, *Local*. Please check the [platform overview](/docs/plataform-overview.md) docs for more details.
 
 Loading your assets
 ----
 
-The first thing you need in order to run your application is to load the necessary scripts in an html page:
+The first thing you need in order to run your application is to load the necessary scripts in an html page (you will need a server capable of serving html files and necessary assets):
 
     <html>
         <head>
@@ -31,9 +31,9 @@ The first thing you need in order to run your application is to load the necessa
         </body>
     </html>
 
-**Monaco**'s requirements are [**Backbonejs**](), and backbone's only hard requirement [**underscorejs**](). But you can use the [**lodash**]() instead of **underscorejs**, in my tests it performs better.
+***Monaco***'s requirements are [**Backbonejs**](http://backbonejs.org/), and backbone's only hard requirement [**underscorejs**](http://underscorejs.org/). But you can use the [**lodash**](http://lodash.com/) instead of [**underscorejs**](http://underscorejs.org/), in my tests it performs better.
 
-Backbone doesn't have a hard dependency on a DOM library, but it does depend on a library capable of doing XHR requests if the app requires external data. Currently it lists [**jQuery**]() and [**Zepto**]() as supported DOM libraries you can use. If your application needs a DOM library then include the request for it before the framework dependencies.
+Backbone doesn't have a hard dependency on a DOM library, but it does depend on a library capable of doing XHR requests if the app requires external data. Currently it lists [**jQuery**](http://jquery.com/) and [**zepto**](http://zeptojs.com/) as supported DOM libraries you can use. If your application needs a DOM library then include the request for it before the requests for the framework and its dependencies.
 
 The last script on the example above is your application script, in our example called `your-app.js`, where you will include all the logic of your application. Your application will probably be divided into multiple files, but you should use a deployment process capable of combining and minifying them into one file in order to minimize the number of requests.
 
@@ -52,7 +52,7 @@ What follows is an explanation of each step of this workflow, this should help y
 
 ### Create a ***Monaco*** Application
 
-Creating a ***Monaco*** application is really easy, basically you will need is to instanciate the `Monaco.Application` class:
+Creating a ***Monaco*** application is really easy, basically you will need is to instantiate the `Monaco.Application` class:
 
     var app = new Monaco.Application('mobile');
 
@@ -60,7 +60,7 @@ For all the options you can use when creating an application please check the [*
 
 ### Adding Routes
 
-When adding routes to an application we can use the `addRoutes` method of the application object, if your route starts with a `^` character then it will be treated as a regex router, otherwise it will be treated as a simple router.
+When adding routes to an application we can use the `addRoutes` method of the application object. In the following example we are using regex routes from the [**monaco-router**](/docs/monaco-router.md) module, if you don’t need advanced routes, then check the docs on the [platform-overview](/docs/platform-overview.md).
 
     // adding routes
     app.addRoutes({
@@ -68,8 +68,7 @@ When adding routes to an application we can use the `addRoutes` method of the ap
         '^users\\/(\\d+)\\/videos\\/?$'       : ['userVideos',        'user:videos']
     });
 
-To know more about **Monaco.Router** please check the [overview docs](/docs/platform-overview.md); for regex routes please check the [**monaco.router** module docs](/docs/monaco-router.md).
-
+What the cove above does is to try to match the url when you navigate (using the `navigate` method of the application router instance) and for the first matched route it will call the appropriate method (controller - see below). In the example above the method is listed as the first array element assigned to the route.
 
 ### Adding Controllers
 
@@ -96,12 +95,11 @@ Controllers are functions that will be executed when a route is matched after na
         app.transitionTo(videosView);
     }));
 
-To understand more about **Monaco** controllers please check [overview doc](/docs/platform-overview.md).
-
+The goal of a controller is to collect the necessary data, process it and create an object capable of presenting the data on the user screen. To understand more about **Monaco** controllers please check the [platform overview](/docs/platform-overview.md) doc.
 
 ### Monaco Collections and Models
 
-Whenever you need to fetch and manipulate data, you will need to create models and collections:
+You saw that on the controllers we need to collect the data, this is done through the use of **Monaco.Model** and **Monaco.Collection**.
 
     // adding necessary collections and models
     app.add('Users', Monaco.Collection.extend({
@@ -123,11 +121,14 @@ Whenever you need to fetch and manipulate data, you will need to create models a
         cacheExpire : 5 // 5 minutes
     }));
 
-To understand more about how to use *Monaco.Model* and *Monaco.Collection* please check [overview doc](/docs/patform-overview.md)
+In this example we created a `Users` collection class and a `User` model, we set the caching strategy and link each other; we also created the `UserVideos` collection linking it to a userid every time an instance is created.
+
+For more information about **Monaco.Collection** and **Monaco.Model** check the [platform overview](/docs/platform-overview.md) doc. For more information about caching check [**monaco.local**](/docs/monaco-local.md).
+
 
 ### Adding your Views
 
-Views are javascript classes that controls the behaviour of the screen presented to the users:
+After processing the data the controller most often creates an instance of a view object (**Monaco.View**), and then transition to the view to present the user with the data.
 
     // adding necessary views
     app.add('UserProfile', Monaco.View.extend({
@@ -153,18 +154,20 @@ Views are javascript classes that controls the behaviour of the screen presented
             app.navigateTo('user:profile', this.collections.userid);
         }
     }));
-    
-If you need more understanding on how to use views works, please check the [overview doc](/docs/platform-overview.md).
 
-### Congiguring your Application
+Views are javascript classes that controls the behaviour of the screen presented to the users. In this example we create two views `UserProfile` and `UserVideos`; we link each view with a specific template object; and also attached some events that will trigger specific functions of the view.
 
-When you have all assets of your application, then you are ready to configure it before starting the application.
+If you need more understanding on how to use **Monaco.View**, please check the [platform overview](/docs/platform-overview.md) doc.
+
+### Configuring your Application
+
+When you have created all necessary assets and included the required business logic, then you are ready to configure how your application should behave by setting some application configuration states.
 
     // configuring your application
     app.set('language', 'en', true);
     app.set('username', window.username);
 
-The code above uses the `set` method of the application object to store some values that can be latter used by the application. For more information about how to configure your application visit the [overview doc](/docs/platform-overview)
+The code above uses the `set` method of the application object to store some values that can be later used by the application. For more information about how to configure your application visit the [overview doc](/docs/platform-overview)
     
 ### Starting your Application
 
@@ -261,6 +264,7 @@ Again the following code is presented all together, but a better and recommended
 
     // starting your application
     app.start({pushState: true});
+
 
 
 
