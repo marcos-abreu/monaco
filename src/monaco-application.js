@@ -45,14 +45,17 @@
             }
 
             // adds the app reference when the object is instanciated
-            var app = this,
-                cto = _.has(object, 'constructor') ? object.constructor : object;
-            object = object.extend({
-                constructor : function(options) {
-                    this._app = app;
-                    return cto.apply(this, arguments);
-                }
-            });
+            // var app = this,
+            //     cto = _.has(object, 'constructor') ? object.constructor : object;
+            // object = object.extend({
+            //     constructor : function(options) {
+            //         this._app = app;
+            //         return cto.apply(this, arguments);
+            //     }
+            // });
+
+            // injects the app reference in the object prototype
+            object.prototype._app = this;
 
             // adds the object using the proper namespacing
             this[object.prototype.namespace][className] = object;
