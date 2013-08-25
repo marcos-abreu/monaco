@@ -1,4 +1,6 @@
 (function(window){
+    'use strict';
+
     var Monaco = window.Monaco = (window.Monaco || {}),
         utils = Monaco.utils = Monaco.utils || {};
 

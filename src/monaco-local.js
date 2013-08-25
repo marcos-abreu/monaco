@@ -1,4 +1,6 @@
 (function(window){
+    'use strict';
+
     var Monaco = window.Monaco = (window.Monaco || {});
 
     // Local Cache Application setup

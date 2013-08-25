@@ -1,5 +1,6 @@
 // override Backbone loadURL to track page loads on history.navigate calls
 (function(window) {
+    'use strict';
 
     var loadUrl = window.Backbone.History.prototype.loadUrl;
 
