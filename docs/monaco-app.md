@@ -69,10 +69,10 @@ Some of the advantages of using the `add` method instead of accessing the protot
 
 - Objects get automatically added to a defined namespace for each object type (Views: myApp.views | Models: myApp.models | Collections: myApp.collections | *Transitions: myApp.transitions)
 
-- Every object gets set a reference to the application when they are instantiated
+- Every object gets set a reference to the application
 
     var users = new myApp.collections.Users();
-    console.log( myApp === users.app );
+    console.log( myApp === users._app );
 
 - Avoids namespace objects from being overridden by mistake
 
