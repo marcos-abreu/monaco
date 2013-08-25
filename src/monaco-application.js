@@ -44,6 +44,10 @@
                 throw new Error('missing required object property \'namespace\'');
             }
 
+            if (this[object.prototype.namespace][className]) {
+                throw new Error(className + ' have already been defined in ' + this.name + '.' + object.prototype.namespace);
+            }
+
             // adds the app reference when the object is instanciated
             // var app = this,
             //     cto = _.has(object, 'constructor') ? object.constructor : object;
