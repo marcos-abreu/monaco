@@ -28,6 +28,15 @@
         }
     });
 
+    // overrides Monaco.Application add method to check for the required `resources` property
+    var applicationAdd = Monaco.Application.prototype.add;
+    Monaco.Application.prototype.add = function(className, object) {
+        if (!object.resource || object.resource === '') {
+            throw new Error('required `resource` property missing from this collection');
+        }
+        return applicationAdd.apply(this, arguments);
+    };
+
     // Application Local Cache Object
     Monaco.Application.prototype.local = {
         // by default the application won't auto cache your api calls
