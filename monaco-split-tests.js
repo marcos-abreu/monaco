@@ -49,9 +49,14 @@
     // public interface to split the tests
     ab.prototype.split = function() {
         _.each(app.splitTests._tests, function(test, index){
-            var slot= (5 - Math.floor(test, index));
             var group = test.getUserGroup(this.ga);
-            this.ga.setCustomVar(slot, test.key + '.internal', group.key, 2);
+            // todo: verify how dimentions and metrics are set
+            //       the idea here would be that the app owner would set up a dimention to track
+            //       his tests (e.g: split-tests) and for each group of tests he would set up a 
+            //       new metric (e.g: app login)
+            this.ga('set', test.key, group.key);
+            // var slot= (5 - Math.floor(test, index));
+            // this.ga.setCustomVar(slot, test.key, group.key, 2);
             if(group.sufix) {
                 _.each(app.view, function(view, key, list){
                     if(list[key + group.sufix] !== void 0) {
@@ -63,7 +68,11 @@
     };
 
     /* -- INDIVIDUAL TEST OBJECT ------------------------------------------- */
-    ab.Test = function(key, groups, options) {
+    ab.Test = function(userid, key, groups, options) {
+        if ( !userid ) {
+            throw new Error( 'Failed to create test - userid is a required filed');
+        }
+        this.userid = userid;
         if ( !key ) {
             throw new Error( 'Failed to create a split test - no key informed' );
         }
@@ -107,7 +116,8 @@
             if ( !groupKey ) {
                 groupKey = this.normalized[Math.floor( Math.random() * this.normalized.length )];
                 this.cookie.setCookie( this.cookiePrefix + this.key, groupKey );
-                ga.trackEvent( 'split-test', 'join', ( this.key + '|' + groupKey ), window.wp.userid );
+                this.ga('send', 'event', 'split-test', 'join', ( this.key + '|' + groupKey ), this.userid );
+                // this.ga._trackEvent('split-test', 'join', ( this.key + '|' + groupKey ), this.userid );
             }
             this.userGroupKey = groupKey;
         }

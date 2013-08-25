@@ -97,7 +97,7 @@
     });
 
     // Allow the `Monaco` object to serve as a global event bus
-    _.extend(Monaco, Events);
+    _.extend(Monaco, Backbone.Events);
 
     /* -- COLLECTION ------------------------------------------------------- */
     Monaco.Collection = Backbone.Collection.extend({
