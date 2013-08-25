@@ -15,7 +15,6 @@
         this.models         = {}; // model list
         this.collections    = {}; // collection list
         this.views          = {}; // view list
-        this.dispatcher     = _.extend({cid: 'dispatcher'}, Backbone.Events); // event agregator
 
         // create the applirouter
         // you can override this property with your own Router if you need
@@ -26,7 +25,7 @@
         Monaco.trigger('app:built', this, this.options);
     };
 
-    _.extend(App.prototype, {
+    _.extend(App.prototype, Backbone.Events, {
         // Start the Monaco application
         start : function(options) {
             options = options || {};
@@ -36,6 +35,7 @@
             }
             this.router = new this.Router();
             Backbone.history.start({pushState: options.pushState});
+            this.trigger('started');
         },
 
         // Interface used to add objects (models, collections, views and transitions) to your application

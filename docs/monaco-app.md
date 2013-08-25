@@ -28,7 +28,7 @@ Your application object will have the following properties:
 Your application object is also extended from Backbone Events and therefore can be used as a global pub/sub event system, for example:
 
     var myApp = new Monaco.Application('mobile');
-    myApp.on('start', function() {
+    myApp.on('started', function() {
         console.log('application started');
     };
 
