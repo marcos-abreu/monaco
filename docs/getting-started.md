@@ -56,7 +56,7 @@ Creating a ***Monaco*** application is really easy, you just need to create a ne
 
     var app = new Monaco.Application('mobile');
 
-For all the options you can use when creating an application please check the [**monaco-app** doc](/docs/monaco-app.md).
+For all the options you can use when creating an application please check the [**monaco-application** doc](/docs/modules/monaco-application.md).
 
 ### Adding Routes
 
@@ -64,11 +64,11 @@ When adding routes to an application use the `addRoutes` method of the applicati
 
     // adding regex routes
     app.addRoutes({
-        '^users\\/(\\d+)\\/?$'                     : ['userProfile',       'user:profile'],
-        '^users\\/(\\d+)\\/videos\\/?$'            : ['userVideos',        'user:videos']
+        'users/:id'                : ['userProfile', { regexp: {id: /\d+/} }],
+        'users/:id/videos'         : ['userVideos',  { regexp: {id: /\d+/} }]
     });
 
-In the code above it was used regex routes from the [**monaco-router**](/docs/monaco-router.md) module. If you don’t need advanced routes functionality, then you can use simple routes:
+In the code above it was used regex routes from the [**monaco-router**](/docs/modules/monaco-router.md) module. If you don’t need advanced routes functionality, then you can use simple routes:
 
     // adding simple routes
     app.addRoutes({
@@ -140,7 +140,7 @@ In this example we created a `Users` collection class and a `User` model class, 
 
 Based on their `url` property whenever you call the `fetch` method of a collection or model instance a request to the server will be made in order to obtain the necessary data. ***Monaco*** expects your server to be a RESTfull Api Server that returns JSON data.
 
-For more information about **Monaco.Collection** and **Monaco.Model** check the [platform overview doc](/docs/platform-overview.md). For more information about caching check [**monaco.local** doc](/docs/monaco-local.md).
+For more information about **Monaco.Collection** and **Monaco.Model** check the [platform overview doc](/docs/platform-overview.md). For more information about caching check [**monaco.local** doc](/docs/modules/monaco-local.md).
 
 
 ### Adding your Views
@@ -173,7 +173,7 @@ After processing the data the controller most often creates an instance of a vie
 
 Views are javascript classes that controls the behaviour of ui elements presented to the users. In this example we create two views `UserProfile` and `UserVideos`; we link each view with a specific template object (in our example using handlebar templates); and also attached some events that will trigger specific functionality.
 
-If you need more understanding on how to use **Monaco.View**, please check the [platform overview doc](/docs/platform-overview.md). For more information on screen transitioning check the [**monaco-transitions** doc](/docs/monaco-transitions.md).
+If you need more understanding on how to use **Monaco.View**, please check the [platform overview doc](/docs/platform-overview.md). For more information on screen transitioning check the [**monaco-transitions** doc](/docs/modules/monaco-transitions.md).
 
 ### Configuring your Application
 
@@ -182,7 +182,7 @@ When you have created all necessary assets and included the required business lo
     app.set('language', 'en', true);
     app.set('username', window.username);
 
-The code above uses the `set` method of the application object to store some values that can be later used by the application. For more information about how to configure your application visit the [**monaco-app.md** doc](/docs/monaco-app.md).
+The code above uses the `set` method of the application object to store some values that can be later used by the application. For more information about how to configure your application visit the [**monaco-application.md** doc](/docs/modules/monaco-application.md).
     
 ### Starting your Application
 
@@ -190,7 +190,7 @@ Now that all is in place it is time to bootstrap your application. Use the `star
 
     app.start({pushState: true});
 
-For more information on the options you can use when starting an application, check the [**monaco-app** doc](/docs/monaco-app.md)
+For more information on the options you can use when starting an application, check the [**monaco-application** doc](/docs/modules/monaco-application.md)
 
 ### Putting all together
 
@@ -201,8 +201,8 @@ Again the following code is presented all together, but a better and recommended
 
     // adding routes
     app.addRoutes({
-        '^users\\/(\\d+)\\/?$'                : ['userProfile',       'user:profile'],
-        '^users\\/(\\d+)\\/videos\\/?$'       : ['userVideos',        'user:videos']
+        'users/:id'                : ['userProfile', { regexp: {id: /\d+/} }],
+        'users/:id/videos'         : ['userVideos',  { regexp: {id: /\d+/} }]
     });
 
     // adding necessary controllers
@@ -262,19 +262,21 @@ Again the following code is presented all together, but a better and recommended
         }
         
         showFeaturedVideos : function(evt) {
-            app.navigateTo('user:videos', this.model.get(id));
+            var route = app.router.reverse('user:videos', {id: this.model.get(id)});
+            app.router.navigate(route, {trigger: true});
         }
     }));
     
     app.add('UserVideos', Monaco.View.extend({
         template : Handlebars.templates['user.profile'],
-        
+
         events : {
             'click #back-button' : 'showProfile',
         },
-        
+
         showProfile : function(evt) {
-            app.navigateTo('user:profile', this.collections.userid);
+            var route = app.router.reverse('user:profile', {id: this.collection.userId});
+            app.router.navigate(route, {trigger: true});
         }
     }));
     
@@ -285,6 +287,4 @@ Again the following code is presented all together, but a better and recommended
 
     // starting your application
     app.start({pushState: true});
-
-
 
