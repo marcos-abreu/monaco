@@ -17,20 +17,19 @@
 
         var currentView = (this.currentView || null),
             TransitionClass = Transition || this.DefaultTransition || Monaco.Transition,
-            transition = new TransitionClass(currentView, targetView);
+            transition = new TransitionClass();
 
-        this.currentView = transition.start(options);
+        this.currentView = transition.start(currentView, targetView, options);
     };
 
     /* -- TRANSITION ------------------------------------------------------- */
-    var Transition = Monaco.Transition = function(fromView, toView) {
-        this.fromView = fromView;
-        this.toView = toView;
+    var Transition = Monaco.Transition = function(options) {
         this.initialize.apply(this, arguments);
     };
 
     // extend the Monaco.Transition with Backbone.Events engine
     _.extend(Monaco.Transition.prototype, Backbone.Events, {
+        // application namespace
         namespace : 'transitions',
 
         // initialization - Override it with your own logic
@@ -38,22 +37,19 @@
 
         // execute the transition - override this method when creating custom transitions
         // returns the view that will be assigned to the application currentView
-        start : function(options) {
+        start : function(fromView, toView, options) {
             options = options || {};
-            if (this.fromView && this.toView.el === this.fromView.el) {
-                this.fromView.remove();
-                this.toView.render(options);
+            if (fromView && toView.el === fromView.el) {
+                fromView.remove();
+                toView.render(options);
             }
-            else if (this.fromView) {
-                this.toView.render(options);
-                this.fromView.remove();
+            else if (fromView) {
+                toView.render(options);
+                fromView.remove();
             } else {
-                this.toView.render(options);
+                toView.render(options);
             }
-            if (_.has(options, 'scrollTop')) {
-                window.scrollTo(0, options.scrollTop);
-            }
-            return this.toView;
+            return toView;
         }
     });
 

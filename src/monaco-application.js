@@ -49,16 +49,6 @@
                 throw new Error(className + ' have already been defined in ' + this.name + '.' + object.prototype.namespace);
             }
 
-            // adds the app reference when the object is instanciated
-            // var app = this,
-            //     cto = _.has(object, 'constructor') ? object.constructor : object;
-            // object = object.extend({
-            //     constructor : function(options) {
-            //         this._app = app;
-            //         return cto.apply(this, arguments);
-            //     }
-            // });
-
             // injects the app reference in the object prototype
             object.prototype._app = this;
 
@@ -109,6 +99,7 @@
 
     /* -- COLLECTION ------------------------------------------------------- */
     Monaco.Collection = Backbone.Collection.extend({
+        // application namespace
         namespace : 'collections',
 
         // override the fetch metod to add the default error router
@@ -122,6 +113,7 @@
 
     /* -- MODEL ------------------------------------------------------------ */
     Monaco.Model = Backbone.Model.extend({
+        // application namespace
         namespace : 'models',
 
         // override the fetch metod to add the default error router
@@ -135,10 +127,77 @@
 
     /* -- VIEW ------------------------------------------------------------- */
     Monaco.View = Backbone.View.extend({
+        // application namespace
         namespace : 'views'
     });
+      
 
     /* -- ROUTER ----------------------------------------------------------- */
-    Monaco.Router = Backbone.Router;
+    Monaco.Router = Backbone.Router.extend({
+        this._routes = [];
 
+        // override the Backbone Router constructor
+        constructor : function() {
+            var _self = this,
+                initialize = this.initialize; // keep the original initialize method
+            // wrap the initialize method to create each route with the necessary options
+            this.initialize = function() {
+                _.each(_self._routes, function(options, route) {
+                    this._addroute(route, options);
+                }, _self);
+                initialize.apply(_self, arguments);
+            };
+            Backbone.Router.prototype.constructor.apply(this, arguments);
+        },
+
+        _addRoute : function(route, options) {
+            options = options || {};
+
+            if (!route) {
+                throw new Error('invalid route: ' + route);
+            }
+
+            var callback = null,
+                name = null; // todo: verify if it should be null or empty string
+
+            if (_.isString(options)) {
+                callback = options;
+            } else if (_.isArray(options) && options.length > 0) {
+                callback = options[0];
+                if ((options.length > 1) && _.isString(options[1])) {
+                    name = options[1];
+                } else if (options.length > 1 && _.isObject(options[1])) {
+                    name = options.name;
+                }
+            },
+
+            if (!callback) {
+                throw new Error('ivalid callback from route: ' + route);
+            }
+
+            return this.route(route, name, callback);
+        },
+
+        addRoutes : function(routes) {
+            if (!routes || !_.isObject(routes)) {
+                throw new Error('invalid routes format - please check the docs');
+            }
+
+            this._routes.push(routes);
+        },
+
+
+        addController : function(name, controller) {
+            if (!name || name === '') {
+                throw new Error('controller name is a required parameter');
+            }
+            if (!_.isFunction(controller)){
+                throw new Error('controller method should be a function');
+            }
+            this.prototype[name] = controller;
+        }
+    });
+
+    /* -- HISTORY ----------------------------------------------------------- */
+    Monaco.History = Backbone.History;
 }(window));

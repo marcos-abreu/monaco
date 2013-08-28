@@ -2,10 +2,10 @@
 (function(window) {
     'use strict';
 
-    var loadUrl = window.Backbone.History.prototype.loadUrl;
+    var loadUrl = window.Monaco.History.prototype.loadUrl;
 
     // overriden method to inject a call to track page views
-    Backbone.History.prototype.loadUrl = function() {
+    Monaco.History.prototype.loadUrl = function() {
         var matched = loadUrl.apply(this, arguments),
             pvFragment = this.fragment;
         if (!/^\//.test(pvFragment)) {
@@ -17,7 +17,7 @@
 
     // Override this method if you are not using google analytics, but 
     // instead another analytics service to track page views
-    Backbone.History.prototype.trackPageview = function(fragment) {
+    Monaco.History.prototype.trackPageview = function(fragment) {
         if( window.ga !== void 0 ) {
             window.ga('send', 'pageview', fragment);
         }

@@ -273,6 +273,26 @@
         }
     };
 
+    // cached data after if has been cached and then it changes
+    Monaco.Collection.prototype.initialize = function() {
+        // refresh a specific model in the local cache
+        this.on('add', 'remove', 'change', 'destroy', function(model) {
+            var app = model._app;
+            if (model.collection && _.result(model.collection, 'cacheLocal') === true) {
+                // todo: verify if I should set the individual model instead of the entire collection
+                app.local.set(model.collection, model.collection.toJSON());
+            }
+        });
+
+        // refresh all models in the local cache
+        this.on('reset', function(collection) {
+            var app = collection._app;
+            if ( _.result(collection, 'cacheLocal') === true) {
+                app.local.set(collection, collection.toJSON());
+            }
+        });
+    };
+
     /* -- SYNC ------------------------------------------------------------- */
     Monaco.sync = Backbone.sync;
 
