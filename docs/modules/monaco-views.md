@@ -8,12 +8,12 @@ Views and subviews management are a key features of complex applications. Instea
 **important**: during the examples below I'm going to use `Handlebars` as my template engine, you are free to use any template engine your project requires.
 
     app.add('MasterView', Monaco.View.extend({
-        …
+        ...
         views : {
             '#css-selector' : { template: Handlebars.templates['my-template'] },
-	    '.css-selector' : { template: Handlebars.templates['my-other-template'] }
+	        '.css-selector' : { template: Handlebars.templates['my-other-template'] }
         }
-        …
+        ...
     }));
 
 Subviews are listed as object literal where each key correspond to a css selector that will be assigned as the element of the view, and the value as being another literal object with options for configuring the subview.

@@ -5,14 +5,14 @@ One important aspect of modern web applications is your caching strategy. You ne
 
 **monaco-local** provides a local caching system (using the browsers’ localStorage) that can be used when setting your caching strategy. The caching system works by storing fetched collection data behind the scenes whenever calling `collection.fetch` method. (for `model.fetch` read the **Caching Models** bellow)
 
-Using **monaco-local** you can use three levels of caching for your application collections: global; collection definition; collection fetch.
+Using **monaco-local** you can use three levels of caching for your application collections: global; collection definition; collection fetch calls.
 
 Caching Properties
 ----
 
 When defining the caching architecture of your application you will be using the following properties:
 
-**resource** : *string* : string that uniquely identify a collection  
+**resource** : *string* : string that uniquely identifies a collection  
 **cacheLocal** : *boolean* : flag indicating if caching should be enabled or disabled (`false` by default )  
 **cacheExpire** : *integer* : integer number indicating how many minutes is the data valid after being cached (30 minutes by default)  
 
