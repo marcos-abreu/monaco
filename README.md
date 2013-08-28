@@ -14,21 +14,21 @@ To accomplish all of that ***Monaco*** is divided into modules, where you can op
 
 Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
 
-- **monaco-app** - this is the core and the only required module of ***Monaco***; responsible for managing the application object and all elements added to it - [learn more](docs/monaco-app.md).
+- **monaco-application** - this is the core and the only required module of ***Monaco***; responsible for managing the application object and all elements added to it - [learn more](docs/modules/monaco-application.md).
 
-- **monaco-local** - this module creates a local caching system that can be used to help you architect your application caching strategy - [learn more](docs/monaco-local.md).
+- **monaco-local** - this module creates a local caching system that can be used to help you architect your application caching strategy - [learn more](docs/modules/monaco-local.md).
 
-- **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - [learn more](docs/monaco-router.md).
+- **monaco-router** - this module allows you to easily add advanced routes using regular expressions; it also has a reverse router implementation that can be used to create smart links - [learn more](docs/modules/monaco-router.md).
 
-- **monaco-views** - this module help you organize *master views* (screen views) and their subviews - [learn more](docs/monaco-views.md).
+- **monaco-views** - this module help you organize *master views* (screen views) and their subviews - [learn more](docs/modules/monaco-views.md).
 
-- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition effect can be implemented based on your app requirements using any technology needed (e.g: javascript, css, or both) - [learn more](docs/monaco-transitions.md).
+- **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition effect can be implemented based on your app requirements using any technology needed (e.g: javascript, css, or both) - [learn more](docs/modules/monaco-transitions.md).
 
-- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - [learn more](docs/monaco-multirequest.md).
+- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - [learn more](docs/modules/monaco-multirequest.md).
 
-- **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - [learn more](docs/monaco-analytics.md).
+- **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - [learn more](docs/modules/monaco-analytics.md).
 
-- **monaco-split-tests** - this module allows you to create split tests and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - [learn more](docs/monaco-split-tests.md).
+- **monaco-experiments** - this module allows you to create split tests (experiments) and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - [learn more](docs/modules/monaco-experiments.md).
 
 
 Monaco Command Line Interface (monaco-cli)
