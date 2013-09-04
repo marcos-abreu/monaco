@@ -30,10 +30,102 @@ Please check the [**monaco.application** doc](/docs/modules/monaco-application.m
 
 Your router is where you list all the routes you expect your user to be navigating when using your application. **Monaco.Router** inherits from Backbone.Router and therefore has all the functionality from it. **monaco-router** expand its functionality with easier to include regex routes as well as reverse routing. Check [the docs](/docs/modules/monaco-router.md) for more info.
 
+You can define your routes at different points in your application:
+
+### Routes when creating your Application
+
+	var app = new Monaco.Application('monaco', {
+		routes: {
+			'/users/:userid':			'userProfile',
+			'/users/:userid/videos':	'userVideos'
+		}
+	});
+
+If you prefer (or your application requires) that you define your routes before creating the application instance, and your don't have a lot of routes in your application, you might take advantage of this options of sending an object with your routes when instanciating your application object.
+
+### Routes before Application Starts
+
+	var app = new Monaco.Application('monaco');
+
+	app.router.add({
+		'/users/:userid':			'userProfile',
+		'/users/:userid/videos':	'userVideos'
+	});
+
+	app.start();
+
+
+This is the recommended way of defining routes, since it will give you the flexibility to define your routes in groups, at any point before you start your application, this way you can organize your code in whatever way your application requires. If you use **monaco-router** it will also give you the opportunity to work with regular expressions in a really easy way - check the [**monaco-router** doc](/docs/modules/monaco-router.md) for more info.
+
+### Routes after Application starts
+
+	var app = new Monaco.Application('monaco');
+
+	app.start();
+
+	app.router.route('/users/:userid', 'userProfile');
+
+This method will allow you to add one router at a time, but this has the advantage of allowing you to add routes even after your application has been started. So use this options if your application requires that you create a dynamic custom route based on the use of the application by your users.
+
+
 **Monaco Controller**
 ----
 
-Controllers in **Monaco** most certanly don't follow the exaclty definition of an MVC paradign, but they serve the porpose of linking the code needed for your request to flow. Your controller will most certanly create the instances of your models and collections in order to fetch the necessary data, and also create an instance of a view capable of rendering the data in the screen. For that Monaco provides a `addController` method you will use to create your controllers. Check the [getting started doc](/docs/getting-started.md) for more info.
+Controllers in **Monaco** most certanly don't follow the exaclty definition of an MVC paradign, but they serve the porpose of linking the code needed for your request to flow. Your controller will most certanly create the instances of your models and collections in order to fetch the necessary data, and also create an instance of a view capable of rendering the data in the screen. Controllers can be created inline when defining your routes, or can be directly appended as a method of the `router` instance, but the most flexible way is to listen to route events from your `router` instance. Check the [getting started doc](/docs/getting-started.md) for more info.
+
+### Inline Controllers
+
+    var app = new Monaco.Application('mobile');
+
+    app.router.add({
+    	'/users/:userid':	function(userId) {
+    		console.log('profile user: ' + userId);
+    	},
+
+    	'/users/:userid/videos':	function(userId) {
+    		console.log('videos for user: ' + userId);
+    	}
+    });
+
+For really simplistic applications, with just a couple of routes, this option might be the prefered way, since you code will probably be easier to manage this way.
+
+### Appending Controllers to `router` instance
+
+	var app = new Monaco.Application('mobile');
+
+	app.router.add({
+		'/users/:userid':			'userProfile',
+		'/users/:userid/videos':	'userVideos'
+	});
+
+	app.router.prototype.userProfile = function(userId) {
+		console.log('profile user: ' + userId);
+	};
+
+	app.router.prototype.userVideos = function(userId) {
+		console.log('videos for user: ' + userId);
+	};
+
+For more complex applications where you will have more than a couple routes and probably your routes and controllers will be split into multiple files to help organize your code. One caveat is that since you are attaching the method direct to the `router` instance you have to make sure you don't override an existing method of the `router` object, or even orverride another controller you have created yourself.
+
+### Controllers as event listeners
+
+	var app = new Monaco.Application('mobile');
+
+	app.router.add({
+		'/users/:userid':			'userProfile',
+		'/users/:userid/videos':	'userVideos'
+	});
+
+	app.router.on('route:userProfile', function(userId) {
+		console.log('profile user: ' + userId);
+	});
+
+	app.router.on('route:userVideos', function(userId) {
+		console.log('videos for user: ' + userId);
+	});
+
+Still supper easy to implement and gives you the flexibility to organize the code the way you want in whatever file you need without incurring into the problem of overriding controller methods, and if you use **monaco-router** module, you can also take advantage of implementing filters - check the [**monaco-router** doc](/docs/modules/monaco-router.md) for more info.
 
 **Monaco.Model**
 ----

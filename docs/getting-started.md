@@ -33,7 +33,12 @@ The first thing you need in order to run your application is to load the necessa
 
 ***Monaco***'s requirements are [*Backbonejs*](http://backbonejs.org/), and backbone's only hard requirement [*underscorejs*](http://underscorejs.org/). But you can use the [*lodash*](http://lodash.com/) instead of [*underscorejs*](http://underscorejs.org/), in my tests it performs better.
 
-Backbone doesn't have a hard dependency on a DOM library, but it does depend on a library capable of doing XHR requests if the app requires external data. Currently, it lists [*jQuery*](http://jquery.com/) and [*zepto*](http://zeptojs.com/) as supported DOM libraries you can use. If your application needs a DOM library then include the request for it before the requests for the framework and its dependencies.
+Backbone's only hard dependency is Underscore.js ( > 1.3.1). 
+For RESTful persistence, history support via Backbone.Router and DOM manipulation
+with Backbone.View, include json2.js, and either jQuery ( > 1.4.2) or Zepto.
+
+
+Backbone doesn't have a hard dependency on a DOM library, but for RESTful persistence (XHR Requests), history support (Backbone.History) and DOM manipulation (Backbone.View) it does depend on a library with those capabilities. Currently, it lists [*jQuery*](http://jquery.com/), [*zepto*](http://zeptojs.com/) and [*ender*]() as supported DOM libraries you can use. Since ***Monaco*** is build on top of *Backbonejs*, the same premises holds true when using this framework. If your application needs a DOM library then include the request for it before the requests for the framework and its dependencies.
 
 The last script on the example above is your application script, in our example called `your-app.js`, where you will include all the logic of your application. Your application will probably be divided into multiple files, but you should use a deployment process capable of combining and minifying them into one file in order to minimize the number of requests.
 
@@ -60,10 +65,10 @@ For all the options you can use when creating an application please check the [*
 
 ### Adding Routes
 
-When adding routes to an application use the `addRoutes` method of the application object.
+When adding routes to an application use the `add` method from your router instance.
 
     // adding regex routes
-    app.addRoutes({
+    app.router.add({
         'users/:id'                : ['userProfile', { regexp: {id: /\d+/} }],
         'users/:id/videos'         : ['userVideos',  { regexp: {id: /\d+/} }]
     });
@@ -71,20 +76,23 @@ When adding routes to an application use the `addRoutes` method of the applicati
 In the code above it was used regex routes from the [**monaco-router**](/docs/modules/monaco-router.md) module. If you don’t need advanced routes functionality, then you can use simple routes:
 
     // adding simple routes
-    app.addRoutes({
+    app.router.add({
         'users/:id'                : 'userProfile',
         'users/:id/videos'         : 'userVideos'
     });
 
+
 Both examples will register a list of urls that will be used when the user navigates (using the `navigate` method of the application router instance) to a different url; for the first matched route its related controller method will be called.
+
+The difference between those two examples is that the first one will just match numeric values as id, while the second example any character used will be recognized.
 
 Check the [platform-overview doc](/docs/platform-overview.md) for more information.
 
 ### Adding Controllers
 
-Controllers are functions that will be executed when a route is matched after the app navigates to a different url. To add ***Monaco*** controllers use the `addController` method of your application object:
+Controllers are functions that will be executed when a route is matched after the app navigates to a different url. To add ***Monaco*** controllers use the `router` instance as an event listener to each route you defined:
 
-    app.addController('userProfile', function(userId) {
+    app.router.on( 'route:userProfile', function(userId) {
         var user = new app.models.User({id : userId});
         user.fetch();
         var profileView = new app.views.UserProfile({
@@ -93,8 +101,9 @@ Controllers are functions that will be executed when a route is matched after th
         
         app.transitionTo(profileView);
     });
-    
-    app.addController('userVideos', function(userId) {
+
+
+    app.router.on( 'route:userVideos', function(userId) {
         var videos = new app.collections.UserVideos(null, {userId: userId});
         videos.fetch();
         var videosView = new app.views.UserVideos({
@@ -102,7 +111,7 @@ Controllers are functions that will be executed when a route is matched after th
         });
         
         app.transitionTo(videosView);
-    }));
+    });
 
 The goal of a controller is to collect the necessary data, process it and create an object capable of presenting the data on the user screen. To understand more about **Monaco** controllers please check the [platform overview doc](/docs/platform-overview.md).
 
@@ -138,7 +147,7 @@ One of the things you should do on a controller is to collect the necessary data
 
 In this example we created a `Users` collection class and a `User` model class, setting the caching strategy and linking each other; we also created the `UserVideos` collection class linking it to a user (`userId`) every time an instance is created.
 
-Based on their `url` property whenever you call the `fetch` method of a collection or model instance a request to the server will be made in order to obtain the necessary data. ***Monaco*** expects your server to be a RESTfull Api Server that returns JSON data.
+Based on their `url` property whenever you call the `fetch` method of a collection or model instance a request to the server will be made in order to obtain the necessary data. ***Monaco*** expects your server to be a RESTfull Api Server that returns JSON data. As in Backbone, if you server doesn't fully comply with the RESTfull paradigm then use the `parse` method from models and collections to sanitaze your data.
 
 For more information about **Monaco.Collection** and **Monaco.Model** check the [platform overview doc](/docs/platform-overview.md). For more information about caching check [**monaco.local** doc](/docs/modules/monaco-local.md).
 
@@ -200,13 +209,13 @@ Again the following code is presented all together, but a better and recommended
     var app = new Monaco.Application('mobile');
 
     // adding routes
-    app.addRoutes({
+    app.router.add({
         'users/:id'                : ['userProfile', { regexp: {id: /\d+/} }],
         'users/:id/videos'         : ['userVideos',  { regexp: {id: /\d+/} }]
     });
 
     // adding necessary controllers
-    app.addController('userProfile', function(userId) {
+    app.router.on('route:userProfile', function(userId) {
         var user = new app.models.User({id : userId});
         user.fetch();
         var profileView = new app.views.UserProfile({
@@ -215,8 +224,8 @@ Again the following code is presented all together, but a better and recommended
         
         app.transitionTo(profileView);
     });
-    
-    app.addController('userVideos', function(userId) {
+
+    app.router.on('route:userVideos', function(userId) {
         var videos = new app.collections.UserVideos(null, {userId: userId});
         videos.fetch();
         var videosView = new app.views.UserVideos({
@@ -224,7 +233,7 @@ Again the following code is presented all together, but a better and recommended
         });
         
         app.transitionTo(videosView);
-    }));
+    });
 
     // adding necessary collections and models
     app.add('Users', Monaco.Collection.extend({

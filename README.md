@@ -12,7 +12,7 @@ Monaco Modules
 
 To accomplish all of that ***Monaco*** is divided into modules, where you can opt to use all or just some of them; whatever is needed to accomplish the task in hand. Each module is designed to help you active a specific requirement of your application.
 
-Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
+Even if you decide to use all modules available, ***Monaco*** is just 5.5kb (minified and gzipped) - but it might be even smaller if you don’t need all modules.
 
 - **monaco-application** - this is the core and the only required module of ***Monaco***; responsible for managing the application object and all elements added to it - [learn more](docs/modules/monaco-application.md).
 
@@ -24,7 +24,7 @@ Even if you decide to use all modules available, ***Monaco*** is just 4.5kb (min
 
 - **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition effect can be implemented based on your app requirements using any technology needed (e.g: javascript, css, or both) - [learn more](docs/modules/monaco-transitions.md).
 
-- **monaco-multirequest** - this module allows you make multiple async requests at once and to manage them appropriately - [learn more](docs/modules/monaco-multirequest.md).
+- **monaco-multirequest** - this module allows you make multiple async fetch requests at once and to manage them appropriately - [learn more](docs/modules/monaco-multirequest.md).
 
 - **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - [learn more](docs/modules/monaco-analytics.md).
 
