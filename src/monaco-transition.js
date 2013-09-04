@@ -1,4 +1,4 @@
-(function(window){
+(function(window, _, Backbone){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {}),
@@ -16,7 +16,7 @@
         }
 
         var currentView = (this.currentView || null),
-            TransitionClass = Transition || this.DefaultTransition || Monaco.Transition,
+            TransitionClass = Transition || this.transitions.DefaultTransition || Monaco.Transition,
             transition = new TransitionClass();
 
         this.currentView = transition.start(currentView, targetView, options);
@@ -55,4 +55,4 @@
 
     Transition.extend = utils.extend;
 
-}(window));
+}(window, window._, window.Backbone));
