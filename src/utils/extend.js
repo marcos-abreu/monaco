@@ -1,4 +1,4 @@
-(function(window) {
+(function(window, _) {
     'use strict';
 
     // expose the main Monaco object
@@ -30,16 +30,6 @@
         return child;
     };
 
-    // Certain Android devices are having issues when a JSON.parse(null) call is executed.
-    // the following should fix this bug
-    JSON.originalParse = JSON.parse;
-    JSON.parse = function(text) {
-        if (text) {
-            return JSON.originalParse(text);
-        }
-        return null;
-    };
-
     // expose the extend function
     utils.extend = extend;
-}(window));
+}(window, window._));
