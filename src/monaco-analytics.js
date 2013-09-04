@@ -1,7 +1,8 @@
 // override Backbone loadURL to track page loads on history.navigate calls
-(function(window) {
+(function(window, _, Backbone) {
     'use strict';
 
+    // keep a reference to the origianl `loadUrl` method from Monaco
     var loadUrl = window.Monaco.History.prototype.loadUrl;
 
     // overriden method to inject a call to track page views
@@ -21,5 +22,5 @@
         if( window.ga !== void 0 ) {
             window.ga('send', 'pageview', fragment);
         }
-    }
-}(window));
+    };
+}(window, window._, window.Backbone));
