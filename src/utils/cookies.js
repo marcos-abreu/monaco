@@ -1,4 +1,4 @@
-(function(window){
+(function(window, _){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {});
@@ -7,7 +7,7 @@
     Monaco.utils = Monaco.utils || {};
 
     Monaco.utils.setCookie = function( key, value, days, baseDomain ) {
-        days = ( days && days >= 0 ) ? days : 365;
+        days = ( days && _.isNumber(days) ) ? days : 365;
 
         var date = new Date();
         date.setTime( date.getTime() + ( days * 24 * 60 * 60 * 1000 ) );
@@ -28,4 +28,4 @@
         return ( result = new RegExp( '(?:^|; )' + encodeURIComponent( key ) + '=([^;]*)' ).exec( document.cookie ) ) ? result[1] : null;
     };
 
-}(window));
+}(window, window._));
