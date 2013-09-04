@@ -1,30 +1,40 @@
-(function(window) {
+(function(window, _, Backbone) {
     'use strict';
     var Monaco = window.Monaco = (window.Monaco || {});
 
     /* -- ROUTER ----------------------------------------------------------- */
-    Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
+    // Cached regular expressions for matching named param parts and splatted
+    // parts of route strings.
+    var optionalParam = /\((.*?)\)/g;
+    var namedParam    = /(\(\?)?:\w+/g;
+    var splatParam    = /\*\w+/g;
+    var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
+
+    // Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
+    _.extend(Monaco.Router.prototype, {
         // return the regexp option of the specific router if available 
         // otherwhise undefined will be returned
-        _routeConstraints : function(route) {
-            var value = this._routes[route];
-            if (value && _.isArray(value) && value.length > 1 && _.isObject(value[1])) {
-                return value[1].regexp;
+        _routeConstraints : function(routeKey) {
+            // var value = this._routes[route];
+            var route = _.find(this._routes, function(route) {
+                return route.key === routeKey;
+            });
+            if (route && route.value && _.isArray(route.value) && route.value.length > 1 && _.isObject(route.value[1])) {
+                return route.value[1].regexp;
             }
             return void 0;
         },
 
         // override the original Backbone method to deal with the regex constraints
-        _routeToRegExp : function(route)
+        _routeToRegExp : function(route) {
             var constraints = this._routeConstraints(route);
             route = route.replace(escapeRegExp, '\\$&')
                          .replace(optionalParam, '(?:$1)?')
                          .replace(namedParam, function(match, optional){
                             // this `if` is the only difference from the original method from Backbone
-                            // todo: find a way of getting the route regexp constranits
                             if (constraints && constraints[match.substr(1)]) {
                                 var reStr = constraints[match.substr(1)].toString();
-                                return reStr.slice(1, reStr.lastIndexOf('/'));
+                                return '(' + reStr.slice(1, reStr.lastIndexOf('/')) + ')';
                             }
                             return optional ? match : '([^\/]+)';
                          })
@@ -32,31 +42,30 @@
             return new RegExp('^' + route + '$');
         },
 
+        filter : function(filters, controller) {
+            for (var i = (filters.length - 1) , l = 0; i >= l; i-- ) {
+                var next = controller;
+                controller = this._wrapFilter(filters[i], next);
+            }
+
+            return controller;
+        },
+
         // internal list of filters
-        _filters : [],
+        _filters : {},
+
+        _wrapFilter: function(filter, next) {
+            return _.bind(function() { 
+                this._filters[filter].call(this, next, arguments);
+            }, this);
+        },
 
         // adds a filter method to list of filters
         addFilter : function(name, callback) {
-            var filter = {};
-            filter[name] = callback;
-            // todo: verify if the filter already exists on the array and throw an error
-            this._filters.push(filter);
-        },
-
-        // wraps one or more controllers into one or more filters
-        // use this method to execute post processing and pre processing code
-        applyFilter: function(filters, controllers) {
-            var originalController;
-
-            // wrapp each controller with the list of filters provided
-            for (var i = 0, l = controllers.length; i < l; i++) {
-                for (var a=0, b=filters.length; a < b; a++) {
-                    originalController = this.prototype[controllers[i]];
-                    this.prototype[controllers[i]] = function() {
-                        return this.prototype._filters[filters[a]].call(this, originalController, arguments);
-                    }
-                }
+            if (this._filters[name]) {
+                throw new Error('This filter alread exists: ' + name);
             }
+            this._filters[name] = callback;
         },
 
         // returns the original route definition based on the url name informed
@@ -96,5 +105,5 @@
 
             return url;
         }
-    };
-}(window));
+    });
+}(window, window._, window.Backbone));
