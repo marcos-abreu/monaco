@@ -11,7 +11,7 @@ Views and subviews management are a key features of complex applications. Instea
         ...
         views : {
             '#css-selector' : { template: Handlebars.templates['my-template'] },
-	        '.css-selector' : { template: Handlebars.templates['my-other-template'] }
+            '.css-selector' : { template: Handlebars.templates['my-other-template'] }
         }
         ...
     }));
