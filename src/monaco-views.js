@@ -1,10 +1,10 @@
-(function(window){
+(function(window, _, Backbone){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {});
 
-    // todo: find a way to inherit from Monaco.View instead of Backbone.View
-    Monaco.View = Monaco.View.extend({
+    var View = Monaco.View;
+    Monaco.View = View.extend({
         // application namespace
         namespace : 'views',
 
@@ -12,53 +12,64 @@
         // and render each subview
         views : {},
 
-        // all children view instances from a master view
-        children: {},
-
         // override constructor function
-        constructor : function() {
+        constructor : function(options) {
+            options = options || {};
             // call the original constructor method
-            Backbone.View.prototype.constructor.apply(this, arguments);
-            
-            // saves a referenec to this instance
-            var _self = this;
+            View.prototype.constructor.apply(this, arguments);
 
+            // assigns a template to the view
+            if (options.template) {
+                this.template = options.template;
+            }
+            
+            // children view instances
+            this.children = {};
+            
             // instanciate each available subview
             _.each(this.views, this._subviewConstructor, this);
 
             // wrap the render method to work with subviews
             var render = this.render;
-            this.render = function() {
-                render.apply(_self, arguments);
-                _self._subviewRender.apply(_self, arguments);
+            this.render = _.bind(function() {
+                // render the master view first
+                render.apply(this, arguments);
+                // then render subviews
+                this._subviewsRender.apply(this, arguments);
+
                 this.trigger('rendered', this);
                 return this;
-            };
+            }, this);
 
             // wrap the remove method to work with subviews
             var remove = this.remove || function() {};
-            this.remove = function() {
-                _self._subviewsRemove.apply(_self, arguments);
-                remove.apply(_self, arguments);
+            this.remove = _.bind(function() {
+                // remove the subviews first
+                this._subviewsRemove.apply(this, arguments);
+                // then remove the master view
+                remove.apply(this, arguments);
+
                 this.trigger('removed', this);
                 return this;
-            };
+            }, this);
         },
 
-        // Default render method that renders the template by appending it to the `el`
+        // Default render method that renders the template by appending it to the views's element
         render : function(data) {
+            // only renders view's that have a template
             if ( this.template ) {
-                data = _.extend(data, (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : null)));
-                if (this.$el) {
-                    this.$el.append( this.template(data));
-                } else {
-                    // todo: render the template and return the html generated
-                }
+                // data will be a mixture of data parameters with either the view's collection or model
+                data = _.extend(data, (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : {})));
+
+                // render the template using the data, appending the result into the view's element
+                this.$el.append(this.template(data));
             }
+
+            // return the current view after rendering to allow chainable calls
             return this;
         },
 
-        // create a subview instance
+        // creates the necessary subview instance(s), storing their reference
         _subviewConstructor : function(options, selector) {
             var ViewClass,
                 params = {};
@@ -66,22 +77,27 @@
             options = options || {};
             ViewClass = (options.ViewClass || Monaco.View);
 
-            if ((options.collection || this.collection) && !options.collectionItem) {
-                params.collection = options.collection || this.collection;
+            var collection = options.collection || this.collection;
+
+            // sets the collection parameter if available
+            if (collection && !options.collectionItem) {
+                params.collection = collection;
             }
+            // sets the model parameter if available
             if (options.model && this.model) {
                 params.model = this.model;
             }
+            // sets the template parameter if available
             if (options.template) {
                 params.template = options.template;
             }
 
-            // creates one subview for each model in the collection
-            if ((options.collection || this.collection) && options.collectionItem) {
-                this._subviewPerModelConstructor(selector, (options.collection || this.collection), options, params, ViewClass);
-
-            // creates one subview
-            } else {
+            // if collectionItem then creates one subview for each model in the collection
+            if (collection && options.collectionItem) {
+                this._subviewPerModelConstructor(selector, collection, options, params, ViewClass);
+            }
+            // creates only one subview
+            else {
                 var view = new ViewClass(params);
                 view.parent = this;
                 this.children[selector] = view;
@@ -91,25 +107,34 @@
         // creates one subview per model in the collection, it also sets the master view
         // to handle events coming from the collection
         _subviewPerModelConstructor: function(selector, collection, options, params, ViewClass) {
-            this.views[selector].suffix = options.suffix = (options.suffix || _.uniqueId('sfx'));
-            var suffix = this[options.suffix] = {};
-            suffix.addOne = function() {
+            // unique namespace per view child to append methods specifically to these views
+            var suffix = this.views[selector].suffix = options.suffix = (options.suffix || _.uniqueId('sfx'));
+            this[suffix] = {};
+
+            // wrap the generic addOne to inject the itemView and listWrapper properties
+            this[suffix].addOne = function() {
                 var args = Array.prototype.slice.call(arguments, 0);
                 args.push({itemView: ViewClass, listWrapper: selector});
                 return Monaco.ViewForModels.addOne.apply(this, args);
             };
-            suffix.addAll = function() { 
+
+            // wrap the generic addAll to inject the itemView and listWrapper properties
+            this[suffix].addAll = function() { 
                 var args = Array.prototype.slice.call(arguments, 0);
                 args.push({itemView: ViewClass, listWrapper: selector});
                 return Monaco.ViewForModels.addAll.apply(this, args);
             };
 
-            this.listenTo(collection, 'add', suffix.addOne);
-            this.listenTo(collection, 'reset', suffix.addAll);
+            // set the proper events so this view will be listening to the collection events
+            // and acting acordingly
+            this.listenTo(collection, ('add.' + suffix), this[suffix].addOne);
+            this.listenTo(collection, ('reset.' + suffix), this[suffix].addAll);
 
+            // for each model in the collection creates a new view with the passed parameters
             collection.each(function(model) {
-                params.model = model;
-                var view = new ViewClass(params);
+                viewParams = _.clone(params);
+                viewParams.model = model;
+                var view = new ViewClass(viewParams);
                 view.parent = this;
                 this.children[selector] = this.children[selector] || [];
                 this.children[selector].push(view);
@@ -118,17 +143,22 @@
 
         // Render each subview after the main view has been rendered. Your can
         // override this by passing `autoRender: false` as an option for the subview
-        _subviewRender : function() {
+        _subviewsRender : function() {
             var _arguments = arguments;
             _.each(this.children, function(view, selector) {
                 var options = this.views[selector];
+                // check if the view should be rendered
                 if (!_.has(options, 'autoRender') || options.autoRender === true) {
+
+                    // render one view per collection model by using the `addAll` method
                     if ((options.collection || this.collection) && options.collectionItem) {
-                        options.suffix.addAll((options.collection || this.collection), {}, {
+                        this[options.suffix].addAll((options.collection || this.collection), {}, {
                             itemView: options.ViewClass || Monaco.ViewClass,
                             listWrapper: selector
                         });
-                    } else {
+                    }
+                    // render a single view
+                    else {
                         view.setElement(selector);
                         view.render.apply(view, _arguments);
                     }
@@ -137,35 +167,63 @@
         },
 
         // Remove (DOM + Events) each subview before removing the main view
-        _subViewRemove : function() {
+        _subviewsRemove : function() {
             var _arguments = arguments;
             _.each(this.children, function(view, selector) {
-                view.remove.apply(view, _arguments);
+
+                // get original view options
                 var options = this.views[selector];
-                if (this[options.suffix]) {
+
+                // remove each collection's model views
+                if (_.isArray(view)) {
+                    // remove each subview
+                    for(var i = 0, l = view.length; i < l; i++) {
+                        view[i].remove.apply(view, _arguments);
+                    }
+
+                    // removed event listeners
+                    this.stopListening((options.collection || this.collection), 'add.' + options.suffix);
+                    this.stopListening((options.collection || this.collection), 'reset.' + options.suffix);
+
+                    // remove the suffix namespace
                     delete this[options.suffix];
-                    // tood: clean-up any events that were set here
+                }
+                // remove single view
+                else {
+                    view.remove.apply(view, _arguments);
                 }
             }, this);
+
+            // reseting the this.childrent to an empty object
+            this.children = {};
         }
 
     });
 
     Monaco.ViewForModels = Monaco.View.extend({
-        addOne : function(model, options, info) {
-            var ViewClass = info.ItemView || this.ItemView;
-            var view = new ViewClass( { model : model } );
-            $( info.listWrapper || this.listWrapper ).append( view.render( model.toJSON() ).el );
+        // adds one element to the set of elements by rendering the content of a model
+        addOne : function(model, options, info, fromAddAll) {
+            var ViewClass = info.ItemView || this.ItemView,
+                view = new ViewClass( { model : model } ),
+                content = view.render( model.toJSON() ).el;
+            if (fromAddAll === true) {
+                return content;
+            }
+            $( info.listWrapper || this.listWrapper ).append( content );
         },
 
+        // adds one element per model based on a collection instance
         addAll : function(collection, options, info) {
+            var result = [];
             options = options || {};
             if ( !options.keepValues ) {
                 $( info.listWrapper || this.listWrapper ).html(''); //clear list
             }
             collection.each( function( obj ) {
-                this.addOne( obj, options, info );
+                result.push(this.addOne( obj, options, info, true ));
             }, this );
+
+            $( info.listWrapper || this.listWrapper ).append(result);
         }
     });
-}(window));
+}(window, window._, window.Backbone));
