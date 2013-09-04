@@ -1,4 +1,4 @@
-(function(window){
+(function(window, _, Backbone){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {});
@@ -11,14 +11,25 @@
     /* -- MAIN OBJECT ------------------------------------------------------ */
     // Experiments Constructor
     var Experiments = Monaco.Experiments = function(options) {
-        this._experiments = [];
+        options = options || {};
+        this._experiments = []; // internal list of experiments
+
+        // merge the default options with the custom options received
         this.options = _.extend({
-            ga : {slot : 1, scope: 2}
-            cookie : {prefix: 'ab', days: 360, baseDomain: false }
+            ga : {slot : 1, scope: 2},
+            cookie : {prefix: 'ab-', days: 360, baseDomain: false }
         }, options);
     };
 
     Experiments.prototype = _.extend(Experiments.prototype, {
+        // remove the experiment reference from the internal list
+        _removeReference: function(experiment) {
+            var index = this._experiments.indexOf(experiment);
+            if (index >= 0) {
+                this._experiments.splice(index, 1);
+            }
+        },
+
         // returns an experiment object based on a key search
         get: function(key) {
             return _.find(this._experiments, function(experiment) {
@@ -29,10 +40,17 @@
         // set an experiment object in the internal list of experiments
         set: function(key, groups, options) {
             var experiment = key;
-            if (! experiment instanceof Monaco.Experiment) {
-                experiment = new Monaco.Experiment(key, groups, options);
+            if ( !(experiment instanceof Monaco.Experiment) ) {
+                experiment = new Monaco.Experiment(this, key, groups, _.extend(this.options, options));
             }
             this._experiments.push(experiment);
+        },
+
+        // remove all split tests
+        remove: function() {
+            _.each(this._experiments, function(experiment) {
+                experiment.remove();
+            });
         },
 
         // split all active experiments
@@ -41,10 +59,10 @@
                 experiment.split();
             });
         }
-    };
+    });
 
     /* -- Individual Experiment Object ------------------------------------------- */
-    var Experiment = Monaco.Experiment = function(key, groups, options) {
+    var Experiment = Monaco.Experiment = function(parent, key, groups, options) {
         // Every experiment needs a key
         if ( !key ) {
             throw new Error( 'Failed to create the experiment - experiment key required' );
@@ -62,6 +80,7 @@
         if ( this.usersPerGroup < 1 ) {
             throw new Error( 'Error processing experiment: \'' + key + '\' - individual groups set to less than 1%' );
         }
+        this.parent = parent;
         this.key = key;
         this.groups = groups;
         this.normalized = this._normalizeGroup( groups );
@@ -82,32 +101,34 @@
         current: null,
 
         // slipt this experiment returning the group this user has been set for this experiment
-        split : function() {
+        split: function() {
             if (!this.current) {
-                var groupKey = this.cookie.get(this.cookiePrefix + this.key);
+                var cookieOpt = this.options.cookie,
+                    groupKey = this.cookie.get(cookieOpt.prefix + this.key);
                 if(!groupKey) {
                     groupKey = this.normalized[Math.floor( Math.random() * this.normalized.length )];
-                    var cookieOpt = this.options.cookie;
                     this.cookie.set(cookieOpt.prefix + this.key, groupKey, cookieOpt.days, cookieOpt.baseDomain);
                     this.saveGroup(groupKey);
                 }
-                this.current = groupKey === this.original ? groupKey : this.groups[groupKey];
+                // this.current = groupKey === this.original ? groupKey : this.groups[groupKey];
+                this.current = groupKey;
+            }
 
             return this.current;
         },
 
         // return the value of a variation based on its key
-        get : function(key) {
+        get: function(key) {
             return this.groups[key];
         },
 
         // helper method that will return the name of the controller based on this experiment variation
-        controller : function(methodName) {
+        controller: function(methodName) {
             return !this.current || this.current === this.original ? methodName : methodName + this.get(this.current).suffix;
         },
 
         // helper method that will return the class name for the view based on this experiment variation
-        view : function(ViewClass) {
+        view: function(ViewClass) {
             return !this.current || this.current === this.original ? ViewClass : ViewClass + this.get(this.current).suffix;
         },
 
@@ -116,15 +137,23 @@
             return !this.current || this.current === this.original ? template : template + '.' + this.get(this.current).suffix;
         },
 
+        // remove this experiment
+        remove: function() {
+            var cookieOpt = this.options.cookie;
+            this.current = null;
+            this.cookie.set(cookieOpt.prefix + this.key, '', -1, cookieOpt.baseDomain);
+            this.parent._removeReference(this);
+        },
+
         // saves the experiment data, when a user joins one variation of the experiment
         // override this method if you want to use another service other than Google Analytics
         saveGroup: function(groupKey) {
-            this._gaq.push(['_setCustomVar', this.options.ga.slot, this.key, groupKey, this.options.ga.scope]);
-            this._gaq.push(['_trackEvent', 'experiments', 'join', (this.key + '|' + groupKey)]);
+            _gaq.push(['_setCustomVar', this.options.ga.slot, this.key, groupKey, this.options.ga.scope]);
+            _gaq.push(['_trackEvent', 'experiments', 'join', (this.key + '|' + groupKey)]);
         },
 
-        // normalize a list of groups (100 items) based on the probability of each group
-        _normalizeGroup : function(groups) {
+        // returns an array of 100 items based on the probability of each group
+        _normalizeGroup: function(groups) {
             var normalized = [],
                 count = 0;
             for (var groupKey in groups) {
@@ -140,4 +169,4 @@
             return normalized;
         }
     });
-}(window));
+}(window, window._, window.Backbone));
