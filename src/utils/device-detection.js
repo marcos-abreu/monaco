@@ -1,4 +1,4 @@
-(function(window) {
+(function(window, _) {
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {}),
@@ -58,4 +58,4 @@
             return result;
         }
     };
-}( window ) );
+}(window, window._) );
