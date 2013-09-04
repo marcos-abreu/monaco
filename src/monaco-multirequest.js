@@ -1,197 +1,153 @@
-(function(window){
+(function(window, _, Backbone){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {});
 
-    var RequestPool = function() {
-        this._pool = {};
-        this.size = 0;
+    // override the collection constructor to assign a cid to every collection
+    // we don't need to do the same for models, since models already have a cid
+    var Collection = Monaco.Collection;
+    Monaco.Collection = Collection.extend({
+        constructor : function() {
+            this.cid = _.uniqueId('c');
+            Collection.prototype.constructor.apply(this, arguments);
+        }
+    });
+
+    // global application method to simplify the multi fetch request call
+    Monaco.Application.prototype.multiFetch = function(objects, options) {
+        var pool = new Monaco.MultiRequest(objects);
+        return pool.fetch(options);
     };
 
-    RequestPool.prototype = {
-        // push a request object into the request pool
-        push : function(key, item) {
-            if(!_.has(this.pool, key)) {
-                // only increment the size if the item is not already in the pool
-                this.size++;
+    // Manages multiple async fetch requests
+    Monaco.MultiRequest = function(objects) {
+        this._responses = {};
+        this._requests = {};
+        this._objects = [];
+        this.cid = _.uniqueId('mr-');
+        // this.id = null;
+
+        this.beingAborted = false; // track if the multirequest is being aborted
+        this.errorCalled = false; // track if the error callback was already called
+
+        this.add(objects);
+    };
+
+    Monaco.MultiRequest.prototype = {
+        // add objects (models/collections) to the internal list of objects
+        add: function(objects) {
+            objects = _.isArray(objects) ? objects : [objects];
+            for (var i = 0, l = objects.length; i < l; i++) {
+                this._objects.push(objects[i]);
             }
-            this._pool[key] = item;
-            return this._pool[key];
+
+            // this.id = this.cid+'|'+_.size(this._objects);
         },
 
-        // remove a request object from the request pool
-        remove : function(key) {
-            if(_.has(this._pool, key)) {
-                this.size--;
-                var item = this._pool[key];
-                delete this._pool[key];
-                return item;
-            }
-            return false;
-        },
+        // fetch all the internal objects tracking the result of each response
+        // if one fails all remaing will be aborted and an optional error callback will be called
+        // if all succeds than an optional success callback will be called
+        fetch: function(options) {
+            var success = options.success,
+                error = options.error;
 
-        // get a request object from the request pool without removing it
-        get : function(key) {
-            if(_.has(this._pool, key)) {
-                return this._pool[key];
-            }
-            return false;
-        },
+            this.beingAborted = false;
+            this.errorCalled = false;
 
-        // clears the request pool of any pending requests.
-        // will not abort any dangerous requests (delete, update, etc)
-        abortAll : function() {
-            _.each(this.keys(), function(key, index) {
-                var item = this._pool[key];
-                if(_.has(item, 'type') && item.type === 'read' && (item.XHR.read.readyState !== 4)) {
-                    this.remove(key).XHR.read.abort('stale');
+            for (var i = 0, l = this._objects.length; i < l; i++) {
+                var reqOptions = _.clone(options);
+                reqOptions.multiRequest = (i+1)+'/'+this.id;
+
+                reqOptions.success = _.bind(function(object, resp, options) {
+                    if (!this.beingAborted) {
+                        this._success.apply(this, arguments);
+                        if (!options.fromLocal && _.size(this._requests) === 0 && success) {
+                            return success.call(this, this._responses);
+                        }
+                    }
+                }, this);
+
+                reqOptions.error = _.bind(function() {
+                    this._error.apply(this, arguments);
+                    if (error) {
+                        // make sure the error callback is just called once per multifetch call
+                        if (this.beingAborted && !this.errorCalled) {
+                            this.errorCalled = true;
+                            return error.apply(this, arguments);
+                        }
+                    }
+                }, this);
+
+                // local cached fetch requests will return the boolean true imeadiately
+                var result = this._objects[i].fetch(reqOptions);
+                if (result && !_.isBoolean(result)) {
+                    this._requests[this._objects[i].cid] = result;
                 }
-                else {
-                    this.remove(key);
+            }
+
+            // if requests is empty, but responses are not, then call the success
+            // this will happen when all responses came from local cache
+            if (!this.beingAborted && _.size(this._requests) === 0 && _.size(this._responses) > 0 && success) {
+                return success.call(this, this._responses);
+            }
+
+            return this;
+        },
+
+        // abort one request based on the object's cid or all requests if no cid is provided
+        abort: function(cid) {
+            var requests = {};
+            if (cid && !this._requests[cid]) {
+                throw new Error('invalid cid: ' + cid + ' - request not found!');
+            } else if (cid) {
+                requests[cid] = this._requests[cid];
+            } else {
+                requests = this._requests;
+            }
+
+            this.beingAborted = true;
+
+            _.each(requests, function(request, key) {
+                // abort fetch incomplete requests ( 4 === complete request )
+                if (request.readyState !== 4) {
+                    request.abort('stale');
                 }
+
+                // remove the request from the pool
+                delete this._requests[key];
             }, this);
-            return this.keys();
         },
 
-        // get the list of request keys on the pool
-        keys : function() {
-            return _.keys(this._pool);
-        }
-    };
+        // wraper success method for each fetch request, that will track the response
+        // and properly manages the internal list of requests
+        _success : function(object, resp, options) {
+            options = options || {};
 
-    Monaco.fetchCollections = function(collections, groupOptions) {
-        var allResponses = {},
-            requestQueue = [],
-            success = groupOptions.success,
-            errror = groupOptions.error;
-
-        // cleanup any pending ajax requests
-        if( app.requestPool.size > 0) {
-            app.requestPool.abortAll();
-        }
-        // add requests to pool
-        _.each(collections, function(collection, index, collections) {
-            app.requestPool.push(_.result(collection, 'resource'), collection);
-        }, this);
-
-        // success and error callbacks of each collection.fetch calls
-        var complete = function(collection, resp, options) {
-            allResponses[_.result(collection, 'resource')] = {
-                collection: collection,
+            // store the current response
+            this._responses[object.cid] = {
+                object: object,
                 resp : resp,
                 options : options
             };
 
-            if (resp._origin && resp._origin === 'local') {
+            // if the data came from local cache, then no request was done so need
+            // to remove it from the pool
+            if (options.fromLocal === true) {
                 return;
             }
 
-            // failure
-            if ((resp.readyState && resp.status) && (resp.readyState != 4 && resp.status !== 200)) {
-                _.each(requestQueue, function(req, index, queue) {
-                    req.abort();
-                }, this);
+            // remove the request from the pool
+            delete this._requests[object.cid];
+        },
 
-                if (error) {
-                    return error(collection, resp);
-                }
+        // wraper error method for each fetch request, that will abort all
+        // pending requests
+        _error : function(object, resp, options) {
+            // remove the request from the pool
+            delete this._requests[object.cid];
 
-            // success
-            } else {
-                requestQueue = _.filter(requestQueue, function(item) {
-                    return (_.result(item, 'resource') !== _.result(collection, 'resource'));
-                });
-                if (_.size(requestQueue) <= 0 && success) {
-                    return success(allResponses);
-                }
-            }
-        };
-
-        groupOptions.success = complete;
-        groupOptions.error = complete;
-
-        var cid = _.uniqueId('mf-'),
-            mfId = cid+'|'+_.size(collections);
-
-        _.each(app.requestPool.keys(), function(key, index) {
-            var collection = app.requestPool.get(key);
-            if(collection !== false) {
-                var fetchOptions = _.clone(groupOptions);
-                    // console.log(key);
-                    // console.log(collection);
-                fetchOptions.multiFetch = (index+1)+'/'+mfId;
-
-                requestQueue.push(collection.fetch(fetchOptions));
-
-                var lastItem = requestQueue.length - 1;
-                // if data from local caching
-                if (requestQueue[lastItem] === true) {
-                    requestQueue = requestQueue.slice(0, -1);
-                } else {
-                    requestQueue[lastItem].resource = _.result(collection, 'resource');
-                }
-            }
-        }, this);
-
-        // in case all requests came from local caching
-        if ((_.size(requestQueue) === 0) && (success)) {
-            return success(allResponses);
+            // abort all pending requests
+            this.abort();
         }
     };
-
-    var Application = Monaco.Application;
-    Monaco.Application = function(options) {
-        this.requestPool = new RequestPool();
-        Application.apply(this, arguments);
-    };
-    Monaco.Application.prototype = Application.prototype;
-
-    var sync = Monaco.sync;
-
-    Monaco.sync = function( method, model, options ) {
-        options = options || {};
-        var key = _.result( model, 'resource' ) || _.result( model.collection, 'resource' ),
-            app = model._app; // A Monaco Model or Collection will have a refrence to the application
-
-        if ((app.requestPool.size > 0) && (typeof app.requestPool.get(key) === 'undefined')) {
-            // if the request is already present, then it's a multiFetch and 
-            // any pending requests have already been aborted and
-            // any requests in the pool are part of the current multiFetch
-            if (options.abortPending === true) {
-                var result = app.requestPool.abortAll();
-                if (result === false) {
-                    throw new Error('request cannot be aborted (dangerous operation to cancel)');
-                }
-            }
-        }
-
-        if (method == 'read') {
-            var success = options.success;
-            options.success = function(data) {
-                if (data._origin === 'local') {
-                    app.requestPool.remove(key);
-                }
-                success.apply(this, arguments);
-            };
-
-            var complete = function(func) {
-                app.requestPool.remove(key);
-                if (func) {
-                    params = Array.prototype.slice.call(arguments);
-                    params.shift();
-                    return func.apply(this, params);
-                }
-            };
-
-            options.success = _.wrap(options.success, complete);
-            options.error   = _.wrap(options.error, complete);
-        }
-
-        var syncResult = sync.apply(this, arguments);
-        if (!options.localOnly) {
-            var request = app.requestPool.push(key, {type: method, XHR:{}});
-            request.XHR[method] = syncResult;
-        }
-        return syncResult;
-    };
-}(window));
+}(window, window._, window.Backbone));
