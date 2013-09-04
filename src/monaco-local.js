@@ -1,4 +1,4 @@
-(function(window){
+(function(window, _, Backbone){
     'use strict';
 
     var Monaco = window.Monaco = (window.Monaco || {});
@@ -30,9 +30,9 @@
 
     // overrides Monaco.Application add method to check for the required `resources` property
     var applicationAdd = Monaco.Application.prototype.add;
-    Monaco.Application.prototype.add = function(className, object) {
-        if (!object.resource || object.resource === '') {
-            throw new Error('required `resource` property missing from this collection');
+    Monaco.Application.prototype.add = function(className, Class) {
+        if (Class.prototype.namespace === 'collections' && (!Class.prototype.resource || Class.prototype.resource === '')) {
+            throw new Error('required `resource` property missing from this collection definition');
         }
         return applicationAdd.apply(this, arguments);
     };
@@ -80,12 +80,12 @@
             expire = (expire !== void 0) ? expire : false;
 
             if (!resource) {
-                //todo: this should not be an error, since this will stop execution, but instead just a warning
-                throw new Error('unable to identify object\'s resource');
+                // todo: find a way to log  - 'unable to identify object\'s resource'
+                return;
             }
             if (!collection) {
-                //todo: this should not be an error, since this will stop execution, but instead just a warning
-                throw new Error('unable to identify object\'s collection');
+                //todo: find a way to log - 'unable to identify object\'s collection'
+                return;
             }
 
             if (!isCollection) {
@@ -127,12 +127,17 @@
 
             for (var i = 0, j = caching.length; i < j; i++) {
                 localData = this['_'+caching[i]+'Get'](resource);
-                // todo: I might want to clean up the data if it is expired ( verify )
                 if (localData && !this._isExpired(localData)) {
                     if (caching[i] === 'storage') {
                        this._memorySet(resource, localData);
                     }
                     return _.clone(localData);
+                }
+                // todo: add an option on the local caching setup that allows it to control
+                //       the following behaviour
+                // clean up the expired data
+                else if(localData) {
+                    this.clear(resource);
                 }
             }
 
@@ -168,12 +173,13 @@
         // get the resource if iti is available in localStorage
         // returns the object or if the objec is not found null
         _storageGet : function(resource) {
+            var result;
             try {
                 result = window.localStorage.getItem(this._getKey(resource));
             } catch(e) {
                 return null;
             }
-            return (result === undefined || result == 'undefined' || result === null) ? null : JSON.parse(result);
+            return (result === undefined || result === 'undefined' || result === null) ? null : JSON.parse(result);
         },
 
         // set the resource data in localStorage
@@ -181,7 +187,7 @@
             var key = this._getKey(resource),
                 keys = window.localStorage.getItem('monaco-' + this._app.name + ':keys') || '{}';
 
-            newKeys = JSON.parse(keys);
+            var newKeys = JSON.parse(keys);
             newKeys[key] = data._ts;
             try {
                 window.localStorage.setItem('monaco-' + this._app.name + ':keys', JSON.stringify(newKeys));
@@ -273,24 +279,23 @@
         }
     };
 
-    // cached data after if has been cached and then it changes
+    var collectionInitialize = Monaco.Collection.prototype.initialize;
     Monaco.Collection.prototype.initialize = function() {
-        // refresh a specific model in the local cache
-        this.on('add', 'remove', 'change', 'destroy', function(model) {
-            var app = model._app;
-            if (model.collection && _.result(model.collection, 'cacheLocal') === true) {
-                // todo: verify if I should set the individual model instead of the entire collection
-                app.local.set(model.collection, model.collection.toJSON());
-            }
-        });
+        // todo: the `remove` and `add` events are called once per each model what causes
+        //       this method to reset the collection multiple times, if there was a way of
+        //       knowing that a certanin event is the last in a series of events fired then
+        //       we could minimize the number of times we reset the collection local cache
 
-        // refresh all models in the local cache
-        this.on('reset', function(collection) {
-            var app = collection._app;
-            if ( _.result(collection, 'cacheLocal') === true) {
-                app.local.set(collection, collection.toJSON());
+        // info: don't need to listen for the `destroy` model event, because it will
+        //       trigger a remove from the collection
+        this.on('add remove change reset', function() {
+            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {};
+            if (!options.fromLocal && 
+                (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
+                this._app.local.set(this, this.toJSON());
             }
-        });
+        }, this);
+        return collectionInitialize.apply(this, arguments);
     };
 
     /* -- SYNC ------------------------------------------------------------- */
@@ -300,21 +305,30 @@
     // usage of the local caching data for Monaco Models or Collections
     Backbone.sync = function(method, model, options) {
         options = options || {};
-        var app = model._app; // A Monaco Model or Collection will have a refrence to the application
+        var app = model._app, // A Monaco Model or Collection will have a refrence to the application
+            localOnly = (options.localOnly === true || model.localOnly === true);
         if (app && method === 'read') {
             // Attempt to retrive the data from local cache and if succeed it will call the appropriated success method
             var data = (options.fresh === true ) ? null : app.local.get(model);
             if (data) {
-                data._origin = 'local';
+                options.fromLocal = true;
                 if (options.success) {
                     options.success(data);
                 }
                 return true;
             }
 
-            // Check the configuration levels and wrap the success call back if at any level we have cacheLocal defined
             var isCollection = _.has(model, 'models');
-            if (( _.result(options, 'cacheLocal') === true) || // fetch level
+
+            // call the `error` callback if no data is found and `localOnly` is set to true
+            if (localOnly === true) {
+                if (options.error) {
+                    options.error({}, "Error: resource not found locally", {});
+                }
+                return;
+            }
+            // Check the configuration levels and wrap the success call back if at any level we have cacheLocal defined
+            else if ((_.result(options, 'cacheLocal') === true) || // fetch level
                 (!_.has(options, 'cacheLocal') &&  isCollection && _.result(model, 'cacheLocal') === true) || // model/collection level
                 (!_.has(options, 'cacheLocal') && !isCollection && _.result(model.collection, 'cacheLocal') === true) || // model/collection level
                 (!_.has(options, 'cacheLocal') && (!_.has(model, 'cacheLocal')) && app.local.autoCache === true)) { // app level
@@ -326,12 +340,12 @@
                     }
                 };
             }
-
-            if (options.localOnly) {
-                return true;
-            }
         }
 
+        // return earlier for model/collections or request options set to localOnly
+        if (localOnly === true) {
+            return;
+        }
         return Monaco.sync(method, model, options);
     };
-}(window));
+}(window, window._, window.Backbone));
