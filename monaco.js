@@ -29,6 +29,7 @@
     };
 
 }(window, window._));
+
 (function(window, _) {
     'use strict';
 
@@ -78,6 +79,7 @@
         return null;
     };
 }(window, window._));
+
 (function(window, _, Backbone){
     'use strict';
 
@@ -107,7 +109,7 @@
         var RouterClass = options.RouterClass || Monaco.Router;
         this.router = new RouterClass({ routes: options.routes });
 
-        // trigger a global envent for application module setup
+        // trigger a global event for application module setup
         Monaco.trigger('app:built', this, options);
     };
 
@@ -133,7 +135,7 @@
 
         // Interface used to add objects (models, collections, views and transitions) to your application
         add : function(className, object) {
-            // all objects added through this method needs a namespance
+            // all objects added through this method needs a namespace
             if (!object.prototype || !object.prototype.namespace) {
                 throw new Error('missing required object property \'namespace\'');
             }
@@ -150,7 +152,7 @@
             this[object.prototype.namespace][className] = object;
         },
 
-        // App setting get method, returning undefined if not found or any error occours
+        // App setting get method, returning undefined if not found or any error occurs
         // todo: return null instead of undefined to comply with the localStorage api
         get : function(key) {
             // searchs for the key in memory
@@ -228,7 +230,7 @@
         // application collection namespace
         namespace : 'collections',
 
-        // override the fetch metod to add the default error router
+        // override the fetch method to add the default error router
         fetch : function(options) {
             options = fetchError.call(this, options);
             return Backbone.Collection.prototype.fetch.call(this, options);
@@ -240,7 +242,7 @@
         // application model namespace
         namespace : 'models',
 
-        // override the fetch metod to add the default error router
+        // override the fetch method to add the default error router
         fetch : function(options) {
             options = fetchError.call(this, options);
             return Backbone.Model.prototype.fetch.call(this, options);
@@ -292,7 +294,7 @@
         _addRoutes : function() {
             var route;
             while((route = this._uroutes.pop()) != null) {
-                // this needs to be added to the _route list before the route gest added to the Router.
+                // this needs to be added to the _route list before the route gets added to the Router.
                 this._routes.push(route);
                 this._addRoute(route.key, route.value);
             }
@@ -323,7 +325,7 @@
             }
 
             if (!callback) {
-                throw new Error('ivalid callback from route: ' + route);
+                throw new Error('invalid callback from route: ' + route);
             }
 
             return this.route(route, callback);
@@ -338,6 +340,7 @@
     Monaco.history = Backbone.history;
 
 }(window, window._, window.Backbone));
+
 (function(window, _, Backbone){
     'use strict';
 
@@ -513,8 +516,8 @@
             this._memory[resource] = data;
         },
 
-        // get the resource if iti is available in localStorage
-        // returns the object or if the objec is not found null
+        // get the resource if it is available in localStorage
+        // returns the object or if the object is not found null
         _storageGet : function(resource) {
             var result;
             try {
@@ -538,7 +541,7 @@
             } catch(e) {
                 // todo: add a warning here
                 try {
-                    // reseting the keys to its origina value if either the newkeys or data failed
+                    // resetting the keys to its original value if either the new keys or data failed
                     window.localStorage.setItem('monaco-' + this._app.name + ':keys', keys);
                 } catch(exception) {
                     // fail silently - todo: add a warning here
@@ -626,7 +629,7 @@
     Monaco.Collection.prototype.initialize = function() {
         // todo: the `remove` and `add` events are called once per each model what causes
         //       this method to reset the collection multiple times, if there was a way of
-        //       knowing that a certanin event is the last in a series of events fired then
+        //       knowing that a certain event is the last in a series of events fired then
         //       we could minimize the number of times we reset the collection local cache
 
         // info: don't need to listen for the `destroy` model event, because it will
@@ -648,10 +651,10 @@
     // usage of the local caching data for Monaco Models or Collections
     Backbone.sync = function(method, model, options) {
         options = options || {};
-        var app = model._app, // A Monaco Model or Collection will have a refrence to the application
+        var app = model._app, // A Monaco Model or Collection will have a reference to the application
             localOnly = (options.localOnly === true || model.localOnly === true);
         if (app && method === 'read') {
-            // Attempt to retrive the data from local cache and if succeed it will call the appropriated success method
+            // Attempt to retrieve the data from local cache and if succeed it will call the appropriated success method
             var data = (options.fresh === true ) ? null : app.local.get(model);
             if (data) {
                 options.fromLocal = true;
@@ -740,8 +743,8 @@
         },
 
         // fetch all the internal objects tracking the result of each response
-        // if one fails all remaing will be aborted and an optional error callback will be called
-        // if all succeds than an optional success callback will be called
+        // if one fails all remaining will be aborted and an optional error callback will be called
+        // if all succeeds than an optional success callback will be called
         fetch: function(options) {
             var success = options.success,
                 error = options.error;
@@ -773,7 +776,7 @@
                     }
                 }, this);
 
-                // local cached fetch requests will return the boolean true imeadiately
+                // local cached fetch requests will return the boolean true immediately
                 var result = this._objects[i].fetch(reqOptions);
                 if (result && !_.isBoolean(result)) {
                     this._requests[this._objects[i].cid] = result;
@@ -813,7 +816,7 @@
             }, this);
         },
 
-        // wraper success method for each fetch request, that will track the response
+        // wrapper success method for each fetch request, that will track the response
         // and properly manages the internal list of requests
         _success : function(object, resp, options) {
             options = options || {};
@@ -835,7 +838,7 @@
             delete this._requests[object.cid];
         },
 
-        // wraper error method for each fetch request, that will abort all
+        // wrapper error method for each fetch request, that will abort all
         // pending requests
         _error : function(object, resp, options) {
             // remove the request from the pool
@@ -862,7 +865,7 @@
     // Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
     _.extend(Monaco.Router.prototype, {
         // return the regexp option of the specific router if available 
-        // otherwhise undefined will be returned
+        // otherwise undefined will be returned
         _routeConstraints : function(routeKey) {
             // var value = this._routes[route];
             var route = _.find(this._routes, function(route) {
@@ -912,7 +915,7 @@
         // adds a filter method to list of filters
         addFilter : function(name, callback) {
             if (this._filters[name]) {
-                throw new Error('This filter alread exists: ' + name);
+                throw new Error('This filter already exists: ' + name);
             }
             this._filters[name] = callback;
         },
@@ -937,8 +940,8 @@
         },
 
         // returns a reverse url based on the url name and parameters passed to it. 
-        // This url won't be validated against the regexp contrains even if available.
-        // Neighter it will validate if you provided enough parameters, the missing
+        // This url won't be validated against the regexp constraints even if available.
+        // Neither it will validate if you provided enough parameters, the missing
         // parameters will be displayed as the original url definition.
         reverse: function(name, params) {
             var url = '';
@@ -956,6 +959,7 @@
         }
     });
 }(window, window._, window.Backbone));
+
 (function(window, _, Backbone){
     'use strict';
 
@@ -984,7 +988,7 @@
             // children view instances
             this.children = {};
             
-            // instanciate each available subview
+            // instantiate each available subview
             _.each(this.views, this._subviewConstructor, this);
 
             // wrap the render method to work with subviews
@@ -1012,7 +1016,7 @@
             }, this);
         },
 
-        // Default render method that renders the template by appending it to the views's element
+        // Default render method that renders the template by appending it to the view's element
         render : function(data) {
             // only renders view's that have a template
             if ( this.template ) {
@@ -1025,6 +1029,19 @@
 
             // return the current view after rendering to allow chainable calls
             return this;
+        },
+
+        // adds a subview after this view has been instantiated
+        // the parameter view should be on the same format you would include your views in a template
+        add : function(view) {
+            var keys = _.keys(view),
+                selector = keys[0],
+                options = view[selector];
+
+            if (!selector || !options) {
+                throw new Error('Invalid subview parameters');
+            }
+            this._subviewConstructor(options, selector);
         },
 
         // creates the necessary subview instance(s), storing their reference
@@ -1100,7 +1117,7 @@
             }
 
             // // set the proper events so this view will be listening to the collection events
-            // // and acting acordingly
+            // // and acting accordingly
             this.listenTo(collection, 'add', _.bind(this[suffix].addOne, this[suffix]));
             this.listenTo(collection, 'reset', _.bind(this[suffix].addAll, this[suffix]));
 
@@ -1130,8 +1147,8 @@
 
                         // render one view per collection model by using the `addAll` method
                         if (view.collection && options.collectionItem) {
-                            // todo: verify if I should crecte a third argument as I'm doing now to
-                            //       include the targes for the viewClass and wrapper of the list
+                            // todo: verify if I should create a third argument as I'm doing now to
+                            //       include the targets for the viewClass and wrapper of the list
                             //       or if I should include them in the options object parameter instead
                             view[options.suffix].addAll(view.collection, {}, {
                                 itemView: options.viewClass ? option.viewClass.call(view) : Monaco.ViewClass,
@@ -1141,7 +1158,7 @@
 
                         // render a single view
                         else {
-                            // render the subview and apend its content into the parent view using the
+                            // render the subview and append its content into the parent view using the
                             // selector associated with the subview
                             // todo: remove jQuery dependency
                             this.$el.find(selector).append(view.render.apply(view, _arguments).el);
@@ -1167,7 +1184,7 @@
                     }
 
                     // removed event listeners
-                    // todo: verify if I need to manually unregister the event listernes
+                    // todo: verify if I need to manually unregister the event listeners
                     this.stopListening(this.collection, 'add',  this[options.suffix].addOne);
                     this.stopListening(this.collection, 'reset', this[options.suffix].addAll);
 
@@ -1180,7 +1197,7 @@
                 }
             }, this);
 
-            // reseting the this.childrent to an empty object
+            // resetting the this.children to an empty object
             this.children = {};
         }
 
@@ -1223,6 +1240,7 @@
         }
     });
 }(window, window._, window.Backbone));
+
 (function(window, _, Backbone){
     'use strict';
 
@@ -1281,6 +1299,7 @@
     Transition.extend = utils.extend;
 
 }(window, window._, window.Backbone));
+
 (function(window, _, Backbone){
     'use strict';
 
@@ -1306,12 +1325,12 @@
 
     Experiments.prototype = _.extend(Experiments.prototype, {
         // remove the experiment reference from the internal list
-        _removeReference: function(experiment) {
-            var index = this._experiments.indexOf(experiment);
-            if (index >= 0) {
-                this._experiments.splice(index, 1);
-            }
-        },
+        // _removeReference: function(experiment) {
+        //     var index = this._experiments.indexOf(experiment);
+        //     if (index >= 0) {
+        //         this._experiments.splice(index, 1);
+        //     }
+        // },
 
         // returns an experiment object based on a key search
         get: function(key) {
@@ -1330,9 +1349,16 @@
         },
 
         // remove all split tests
-        remove: function() {
+        // remove: function() {
+        //     _.each(this._experiments, function(experiment) {
+        //         experiment.remove();
+        //     });
+        // },
+
+        // opt-out the current user from all experiments
+        optout: function() {
             _.each(this._experiments, function(experiment) {
-                experiment.remove();
+                experiment.optout();
             });
         },
 
@@ -1377,13 +1403,13 @@
 
     // normalize groups based on the percentage set for each group
     Experiment.prototype = _.extend(Experiment.prototype, {
-        // original group key used when the user is not assined to any variation
+        // original group key used when the user is not assigned to any variation
         original: '__original__',
 
-        // keep track of the current variation this user is assigned to after spliting this experiment
+        // keep track of the current variation this user is assigned to after splitting this experiment
         current: null,
 
-        // slipt this experiment returning the group this user has been set for this experiment
+        // split this experiment returning the group this user has been set for this experiment
         split: function() {
             if (!this.current) {
                 var cookieOpt = this.options.cookie,
@@ -1421,11 +1447,17 @@
         },
 
         // remove this experiment
-        remove: function() {
-            var cookieOpt = this.options.cookie;
-            this.current = null;
-            this.cookie.set(cookieOpt.prefix + this.key, '', -1, cookieOpt.baseDomain);
-            this.parent._removeReference(this);
+        // remove: function() {
+        //     var cookieOpt = this.options.cookie;
+        //     this.current = null;
+        //     this.cookie.set(cookieOpt.prefix + this.key, '', -1, cookieOpt.baseDomain);
+        //     this.parent._removeReference(this);
+        // },
+
+        // optout the current user from a specific experiment, basically setting the cookie
+        // to the `this.original` property value value
+        optout: function() {
+            this.cookie.set(cookieOpt.prefix + this.key, this.original, cookieOpt.days, cookieOpt.baseDomain);
         },
 
         // saves the experiment data, when a user joins one variation of the experiment
@@ -1453,14 +1485,15 @@
         }
     });
 }(window, window._, window.Backbone));
+
 // override Backbone loadURL to track page loads on history.navigate calls
 (function(window, _, Backbone) {
     'use strict';
 
-    // keep a reference to the origianl `loadUrl` method from Monaco
+    // keep a reference to the original `loadUrl` method from Monaco
     var loadUrl = window.Monaco.History.prototype.loadUrl;
 
-    // overriden method to inject a call to track page views
+    // overridden method to inject a call to track page views
     Monaco.History.prototype.loadUrl = function() {
         var matched = loadUrl.apply(this, arguments),
             pvFragment = this.fragment;
