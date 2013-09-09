@@ -33,7 +33,6 @@
 
     <script src="application/app.js"></script>
     <script src="application/utils/utilities.js"></script>
-
     <script src="application/directory/routes.js"></script>
     <script src="application/directory/views/shell.js"></script>
     <script src="application/directory/views/home.js"></script>
@@ -60,17 +59,41 @@
     <!--<script src="lib/parse-1.2.2.min.js"></script>-->
     <!--<script src="application/directory/models/model-parse-com.js"></script>-->
 
-    <script src="js/config.js"></script>
+    <script src="application/config.js"></script>
 
     <script>
-        // usually to start a monaco application you just need to call the `start` method of the application object
-        // for this application since we are working with underscore external templates we will be calling the
-        // `loadTemplate` method passing an array of templates to be loaded, and a callback function that will be
-        // executed after all templates are loaded, and in this function we will start our application.
+
+        // Usually to start a Monaco application you just need to call the `start`
+        // method of the application instance object. For this application it was
+        // decided that the templates would be assyncrounsly loaded, and therefore
+        // we need to wait untill all of them are loaded and properly assigned
+        // to their views before starting the Monaco application.
         $(function() {
+
+            // the `directory` string passed as the first argument will be used
+            // when constructing the path for each template to be loaded following
+            // the pattern:
+            // url...to...your...app/module-name/templates/template-name.html
             window.app.utils.loadTemplates('directory',
-                ["home", "contact", "shell", "employee", "employee-summary", "employee-list-item"],
+
+                // list of templates to be assync loaded
+                ['home', 'contact', 'shell', 'employee', 'employee-summary', 'employee-list-item'],
+
+                // callback to be executed after the templates are loaded
                 function() {
+
+                    // templates are usually assigned to views on the view script
+                    // definition, but since this application is assync loading
+                    // them we are dynamically assigning them here to their
+                    // respective view classes before starting the application
+                    window.app.views.Home.prototype.template = _.template(app.templates['home']);
+                    window.app.views.Contact.prototype.template = _.template(app.templates['contact']);
+                    window.app.views.Shell.prototype.template = _.template(app.templates['shell']);
+                    window.app.views.Employee.prototype.template = _.template(app.templates['employee']);
+                    window.app.views.EmployeeSummary.prototype.template = _.template(app.templates['employee-summary']);
+                    window.app.views.EmployeeListItem.prototype.template = _.template(app.templates['employee-list-item']);
+
+                    // start the application
                     window.app.start();
                 }
             );

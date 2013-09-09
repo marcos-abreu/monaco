@@ -14,8 +14,7 @@
             var href = window.location.origin + window.location.pathname;
             href = href.lastIndexOf('/') === (href.length - 1) ? href : href + '/';
             deferreds.push(
-                // $.get(window.location.href + '/' + appModule +  '/templates/' + template + '.html', 
-                $.get(href + appModule +  '/templates/' + template, 
+                $.get(href + appModule +  '/templates/' + template + '.html', 
                         function(resp, status, xhr){
                             app.templates[template] = resp;
                         }, 'html')
