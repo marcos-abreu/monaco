@@ -13,7 +13,7 @@
     // Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
     _.extend(Monaco.Router.prototype, {
         // return the regexp option of the specific router if available 
-        // otherwhise undefined will be returned
+        // otherwise undefined will be returned
         _routeConstraints : function(routeKey) {
             // var value = this._routes[route];
             var route = _.find(this._routes, function(route) {
@@ -63,7 +63,7 @@
         // adds a filter method to list of filters
         addFilter : function(name, callback) {
             if (this._filters[name]) {
-                throw new Error('This filter alread exists: ' + name);
+                throw new Error('This filter already exists: ' + name);
             }
             this._filters[name] = callback;
         },
@@ -88,8 +88,8 @@
         },
 
         // returns a reverse url based on the url name and parameters passed to it. 
-        // This url won't be validated against the regexp contrains even if available.
-        // Neighter it will validate if you provided enough parameters, the missing
+        // This url won't be validated against the regexp constraints even if available.
+        // Neither it will validate if you provided enough parameters, the missing
         // parameters will be displayed as the original url definition.
         reverse: function(name, params) {
             var url = '';

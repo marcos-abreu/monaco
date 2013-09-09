@@ -4,7 +4,7 @@
 
         // this prefetched data will be used only if you are using the
         // `model-local-cache.js` for all other options you can comment the 
-        // lines bellow until the end of the prefetched data
+        // lines below until the end of the prefetched data
         , { prefetched: {
             'employees' : { 
                 expire: null, 

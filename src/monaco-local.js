@@ -173,8 +173,8 @@
             this._memory[resource] = data;
         },
 
-        // get the resource if iti is available in localStorage
-        // returns the object or if the objec is not found null
+        // get the resource if it is available in localStorage
+        // returns the object or if the object is not found null
         _storageGet : function(resource) {
             var result;
             try {
@@ -198,7 +198,7 @@
             } catch(e) {
                 // todo: add a warning here
                 try {
-                    // reseting the keys to its origina value if either the newkeys or data failed
+                    // resetting the keys to its original value if either the new keys or data failed
                     window.localStorage.setItem('monaco-' + this._app.name + ':keys', keys);
                 } catch(exception) {
                     // fail silently - todo: add a warning here
@@ -286,7 +286,7 @@
     Monaco.Collection.prototype.initialize = function() {
         // todo: the `remove` and `add` events are called once per each model what causes
         //       this method to reset the collection multiple times, if there was a way of
-        //       knowing that a certanin event is the last in a series of events fired then
+        //       knowing that a certain event is the last in a series of events fired then
         //       we could minimize the number of times we reset the collection local cache
 
         // info: don't need to listen for the `destroy` model event, because it will
@@ -308,10 +308,10 @@
     // usage of the local caching data for Monaco Models or Collections
     Backbone.sync = function(method, model, options) {
         options = options || {};
-        var app = model._app, // A Monaco Model or Collection will have a refrence to the application
+        var app = model._app, // A Monaco Model or Collection will have a reference to the application
             localOnly = (options.localOnly === true || model.localOnly === true);
         if (app && method === 'read') {
-            // Attempt to retrive the data from local cache and if succeed it will call the appropriated success method
+            // Attempt to retrieve the data from local cache and if succeed it will call the appropriated success method
             var data = (options.fresh === true ) ? null : app.local.get(model);
             if (data) {
                 options.fromLocal = true;

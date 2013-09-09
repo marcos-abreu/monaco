@@ -2,10 +2,10 @@
 (function(window, _, Backbone) {
     'use strict';
 
-    // keep a reference to the origianl `loadUrl` method from Monaco
+    // keep a reference to the original `loadUrl` method from Monaco
     var loadUrl = window.Monaco.History.prototype.loadUrl;
 
-    // overriden method to inject a call to track page views
+    // overridden method to inject a call to track page views
     Monaco.History.prototype.loadUrl = function() {
         var matched = loadUrl.apply(this, arguments),
             pvFragment = this.fragment;

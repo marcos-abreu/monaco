@@ -4,8 +4,8 @@
     // controller gets executed - this is an example of a before filter
     app.router.addFilter('displayShell', function(func, args) {
 
-        // if the `shellRendered` flag is set to false the render the shell and
-        // set the flag to true
+        // if the `shell` is not available then render the shell and
+        // store it for future references
         if (!app.get('shell')) {
             var shell = new app.views.Shell({ el : 'body' });
             shell.render();

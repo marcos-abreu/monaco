@@ -45,8 +45,8 @@
         },
 
         // fetch all the internal objects tracking the result of each response
-        // if one fails all remaing will be aborted and an optional error callback will be called
-        // if all succeds than an optional success callback will be called
+        // if one fails all remaining will be aborted and an optional error callback will be called
+        // if all succeeds than an optional success callback will be called
         fetch: function(options) {
             var success = options.success,
                 error = options.error;
@@ -78,7 +78,7 @@
                     }
                 }, this);
 
-                // local cached fetch requests will return the boolean true imeadiately
+                // local cached fetch requests will return the boolean true immediately
                 var result = this._objects[i].fetch(reqOptions);
                 if (result && !_.isBoolean(result)) {
                     this._requests[this._objects[i].cid] = result;
@@ -118,7 +118,7 @@
             }, this);
         },
 
-        // wraper success method for each fetch request, that will track the response
+        // wrapper success method for each fetch request, that will track the response
         // and properly manages the internal list of requests
         _success : function(object, resp, options) {
             options = options || {};
@@ -140,7 +140,7 @@
             delete this._requests[object.cid];
         },
 
-        // wraper error method for each fetch request, that will abort all
+        // wrapper error method for each fetch request, that will abort all
         // pending requests
         _error : function(object, resp, options) {
             // remove the request from the pool

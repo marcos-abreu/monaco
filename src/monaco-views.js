@@ -26,7 +26,7 @@
             // children view instances
             this.children = {};
             
-            // instanciate each available subview
+            // instantiate each available subview
             _.each(this.views, this._subviewConstructor, this);
 
             // wrap the render method to work with subviews
@@ -54,7 +54,7 @@
             }, this);
         },
 
-        // Default render method that renders the template by appending it to the views's element
+        // Default render method that renders the template by appending it to the view's element
         render : function(data) {
             // only renders view's that have a template
             if ( this.template ) {
@@ -69,7 +69,7 @@
             return this;
         },
 
-        // adds a subview after this view has been instanciated
+        // adds a subview after this view has been instantiated
         // the parameter view should be on the same format you would include your views in a template
         add : function(view) {
             var keys = _.keys(view),
@@ -155,7 +155,7 @@
             }
 
             // // set the proper events so this view will be listening to the collection events
-            // // and acting acordingly
+            // // and acting accordingly
             this.listenTo(collection, 'add', _.bind(this[suffix].addOne, this[suffix]));
             this.listenTo(collection, 'reset', _.bind(this[suffix].addAll, this[suffix]));
 
@@ -185,8 +185,8 @@
 
                         // render one view per collection model by using the `addAll` method
                         if (view.collection && options.collectionItem) {
-                            // todo: verify if I should crecte a third argument as I'm doing now to
-                            //       include the targes for the viewClass and wrapper of the list
+                            // todo: verify if I should create a third argument as I'm doing now to
+                            //       include the targets for the viewClass and wrapper of the list
                             //       or if I should include them in the options object parameter instead
                             view[options.suffix].addAll(view.collection, {}, {
                                 itemView: options.viewClass ? option.viewClass.call(view) : Monaco.ViewClass,
@@ -196,7 +196,7 @@
 
                         // render a single view
                         else {
-                            // render the subview and apend its content into the parent view using the
+                            // render the subview and append its content into the parent view using the
                             // selector associated with the subview
                             // todo: remove jQuery dependency
                             this.$el.find(selector).append(view.render.apply(view, _arguments).el);
@@ -222,7 +222,7 @@
                     }
 
                     // removed event listeners
-                    // todo: verify if I need to manually unregister the event listernes
+                    // todo: verify if I need to manually unregister the event listeners
                     this.stopListening(this.collection, 'add',  this[options.suffix].addOne);
                     this.stopListening(this.collection, 'reset', this[options.suffix].addAll);
 
@@ -235,7 +235,7 @@
                 }
             }, this);
 
-            // reseting the this.childrent to an empty object
+            // resetting the this.children to an empty object
             this.children = {};
         }
 

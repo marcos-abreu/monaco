@@ -1,16 +1,11 @@
 ## Employee Directory ##
 
-### Sample Application built with Monaco and Twitter Bootstrap ###
+### Sample Application built with ***Monaco*** and *Twitter Bootstrap* ###
 
-"Monaco Directory" is a simple Employee Directory application built with [Monaco](https://github.com/marcos-abreu/monaco) and [Twitter Bootstrap] (http://twitter.github.io/bootstrap/).
+"Directory" is a simple Employee Directory application built by [Christophe Coenraets](http://coenraets.org/blog/bio/). The ***Monaco*** version of this app was build just to show how to build an application using ***Monaco*** features.
 
-Refer to [this blog post]() for more information about the application.
+I've heavely commented on the code but if you have any questions please contact me at [abreu.marcos@gmail.com](abreu.marcos@gmail.com).
 
+Refer to [this blog post]() for more information about how I rebuild the application using ***Monaco***.
 
-The application runs out-of-the-box with the local cache feature available in Monaco, but you can also run the application using other layers available in the original application.
-
-You can also run the application with an in-memory data provider built by the original creator of this app - [Christophe Coenraets](http://coenraets.org/blog/bio/). Or the other persistent layers also developed by him:
-
-- [directory-rest-nodejs](https://github.com/ccoenraets/directory-rest-nodejs) (Node.js/MongoDB implementation)
-- [directory-rest-php](https://github.com/ccoenraets/directory-rest-php) (PHP implementation)
-
+The application runs out-of-the-box with ***Monaco***s *local cache* feature, but you can also run the application using the in-memory data provider or the other persistent layers available in the original application built by [Christophe Coenraets](http://coenraets.org/blog/bio/).

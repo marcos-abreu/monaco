@@ -27,7 +27,7 @@
         var RouterClass = options.RouterClass || Monaco.Router;
         this.router = new RouterClass({ routes: options.routes });
 
-        // trigger a global envent for application module setup
+        // trigger a global event for application module setup
         Monaco.trigger('app:built', this, options);
     };
 
@@ -53,7 +53,7 @@
 
         // Interface used to add objects (models, collections, views and transitions) to your application
         add : function(className, object) {
-            // all objects added through this method needs a namespance
+            // all objects added through this method needs a namespace
             if (!object.prototype || !object.prototype.namespace) {
                 throw new Error('missing required object property \'namespace\'');
             }
@@ -70,7 +70,7 @@
             this[object.prototype.namespace][className] = object;
         },
 
-        // App setting get method, returning undefined if not found or any error occours
+        // App setting get method, returning undefined if not found or any error occurs
         // todo: return null instead of undefined to comply with the localStorage api
         get : function(key) {
             // searchs for the key in memory
@@ -148,7 +148,7 @@
         // application collection namespace
         namespace : 'collections',
 
-        // override the fetch metod to add the default error router
+        // override the fetch method to add the default error router
         fetch : function(options) {
             options = fetchError.call(this, options);
             return Backbone.Collection.prototype.fetch.call(this, options);
@@ -160,7 +160,7 @@
         // application model namespace
         namespace : 'models',
 
-        // override the fetch metod to add the default error router
+        // override the fetch method to add the default error router
         fetch : function(options) {
             options = fetchError.call(this, options);
             return Backbone.Model.prototype.fetch.call(this, options);
@@ -212,7 +212,7 @@
         _addRoutes : function() {
             var route;
             while((route = this._uroutes.pop()) != null) {
-                // this needs to be added to the _route list before the route gest added to the Router.
+                // this needs to be added to the _route list before the route gets added to the Router.
                 this._routes.push(route);
                 this._addRoute(route.key, route.value);
             }
@@ -243,7 +243,7 @@
             }
 
             if (!callback) {
-                throw new Error('ivalid callback from route: ' + route);
+                throw new Error('invalid callback from route: ' + route);
             }
 
             return this.route(route, callback);

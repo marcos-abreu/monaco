@@ -101,13 +101,13 @@
 
     // normalize groups based on the percentage set for each group
     Experiment.prototype = _.extend(Experiment.prototype, {
-        // original group key used when the user is not assined to any variation
+        // original group key used when the user is not assigned to any variation
         original: '__original__',
 
-        // keep track of the current variation this user is assigned to after spliting this experiment
+        // keep track of the current variation this user is assigned to after splitting this experiment
         current: null,
 
-        // slipt this experiment returning the group this user has been set for this experiment
+        // split this experiment returning the group this user has been set for this experiment
         split: function() {
             if (!this.current) {
                 var cookieOpt = this.options.cookie,

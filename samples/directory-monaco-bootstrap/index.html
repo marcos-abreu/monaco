@@ -10,8 +10,8 @@
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+   <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+   <![endif]-->
 
     <script src="http://use.edgefonts.net/source-sans-pro.js"></script>
 
@@ -65,8 +65,8 @@
 
         // Usually to start a Monaco application you just need to call the `start`
         // method of the application instance object. For this application it was
-        // decided that the templates would be assyncrounsly loaded, and therefore
-        // we need to wait untill all of them are loaded and properly assigned
+        // decided that the templates would be asynchronously loaded, and therefore
+        // we need to wait until all of them are loaded and properly assigned
         // to their views before starting the Monaco application.
         $(function() {
 
@@ -76,14 +76,14 @@
             // url...to...your...app/module-name/templates/template-name.html
             window.app.utils.loadTemplates('directory',
 
-                // list of templates to be assync loaded
+                // list of templates to be async loaded
                 ['home', 'contact', 'shell', 'employee', 'employee-summary', 'employee-list-item'],
 
                 // callback to be executed after the templates are loaded
                 function() {
 
                     // templates are usually assigned to views on the view script
-                    // definition, but since this application is assync loading
+                    // definition, but since this application is async loading
                     // them we are dynamically assigning them here to their
                     // respective view classes before starting the application
                     window.app.views.Home.prototype.template = _.template(app.templates['home']);

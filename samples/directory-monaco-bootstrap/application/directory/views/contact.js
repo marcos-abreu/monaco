@@ -3,7 +3,7 @@
     app.add('Contact', Monaco.View.extend({
 
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['contact']),
 
@@ -12,7 +12,7 @@
         initialize: function(options) {
 
             // listens for the 'rendered' event of this view and trigger the
-            // `onRendered` method when it occours
+            // `onRendered` method when it occurs
             this.on('rendered', this.onRendered);
         },
 
@@ -32,7 +32,7 @@
             this.$el.html(this.template());
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         }
     }));

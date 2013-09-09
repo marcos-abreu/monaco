@@ -25,7 +25,7 @@
     // saves the original reference to Monaco's _routeToRegExp into a new method of the router instance
     Monaco.Router.prototype._routeToRE = Monaco.Router.prototype._routeToRegExp;
 
-    // reverted Monaco to make use of the original Backbones's _routeToRegExp 
+    // reverted Monaco to make use of the original Backbone's _routeToRegExp 
     // ( in this case our version Backbone Query Parameters )
     Monaco.Router.prototype._routeToRegExp = function(route) {
         return Backbone.Router.prototype._routeToRegExp.call(this, route);
@@ -36,7 +36,7 @@
         namedParam    = /(\(\?)?:\w+/g,
         namesPattern = /[\:\*]([^\:\?\/]+)/g;
 
-    // Makes Backbone's _routeToRegExp call Monacos's BQP bind implementation of the method
+    // Makes Backbone's _routeToRegExp call Monaco's BQP bind implementation of the method
     // This method is taken from Backbone Query Parameters, but with modifications to call
     // Monaco's method to convert the router into a regular expression, and then manipulate
     // it when it comes back.

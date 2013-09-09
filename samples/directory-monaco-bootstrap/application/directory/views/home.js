@@ -1,7 +1,7 @@
 (function(window, Monaco, _, $, app) {
     app.add('Home', Monaco.View.extend({
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['home']),
 
@@ -11,7 +11,7 @@
             this.on('rendered', this.onRendered);
         },
 
-        // inject this view rendered content into the html page using the \
+        // inject this view rendered content into the html page using the
         // `content` element as a container
         onRendered: function() {
             $(this.el).appendTo('#content');
@@ -22,7 +22,7 @@
             this.$el.html(this.template());
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         },
 

@@ -22,7 +22,7 @@
     }));
 
     // generic collection of employees used whenever you need a list of
-    // employees - check the more specialized collections bellow
+    // employees - check the more specialized collections below
     app.add('Employees', Monaco.Collection.extend({
         // unique identifier for this collection - used on local caching
         resource: 'employees',

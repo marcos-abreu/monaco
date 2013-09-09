@@ -1,4 +1,4 @@
-// App Initaal Configuration
+// App Initial Configuration
 (function(window, _, app){
 
     // set the initial state of the app shell

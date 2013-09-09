@@ -8,7 +8,7 @@
     app.utils.loadTemplates = function(appModule, templates, callback) {
         var deferreds = [];
 
-        // loop over the templates array submiting a get request for each 
+        // loop over the templates array submitting a get request for each 
         // and storing the request call in an array
         $.each(templates, function(index, template) {
             var href = window.location.origin + window.location.pathname;

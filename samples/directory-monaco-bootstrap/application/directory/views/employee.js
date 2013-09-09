@@ -1,11 +1,11 @@
 (function(window, Monaco, _, $, app) {
 
     // Generic EmployeeList - check the more specialized types of EmployeeList
-    // views bellow.
+    // views below.
     app.add('EmployeeList', Monaco.View.extend({
 
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['employee-list']),
     }));
@@ -29,7 +29,7 @@
             this.addAll();
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         },
 
@@ -37,9 +37,9 @@
             var item = new app.views.EmployeeListItem({model: model}),
                 content = item.render().el;
 
-            // If I'm runing the addOne method as part of the addAll, then just
+            // If I'm running the addOne method as part of the addAll, then just
             // return the generated content that by the end of the addAll the
-            // content will be rendered all together
+            // content will be rendered altogether
             if (fromAddAll === true) {
                 return content;
             }
@@ -84,7 +84,7 @@
 
                 // using an anonymous function that returns a Monaco view class
                 // allows us to assign a view class that is not available now,
-                // but it will be when the master view gets instanciated
+                // but it will be when the master view gets instantiated
                 viewClass: function(){ return app.views.EmployeeListItem; }, 
 
                 // this flag indicates that a new viewClass will be create for
@@ -100,11 +100,11 @@
     }));
 
 
-    // View Class used to build and render each item of a EmployeeList View
+    // View Class used to build and render each item of an EmployeeList View
     app.add('EmployeeListItem', Monaco.View.extend({
 
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['employee-list-item']),
 
@@ -127,7 +127,7 @@
             this.$el.html(this.template(data));
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         }
     }));
@@ -136,7 +136,7 @@
     app.add('Employee', Monaco.View.extend({
 
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['employee']),
 
@@ -179,7 +179,7 @@
             this.$el.html(this.template(this.model.toJSON()));
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         }
     }));
@@ -188,7 +188,7 @@
     app.add('EmployeeSummary', Monaco.View.extend({
 
         // Template used when rendering this view, it is currently disabled
-        // since we are assyncrousnoly loading the templates. For a complete
+        // since we are asynchronously loading the templates. For a complete
         // explanation check the code and comments on index.html
         // template: _.template(app.templates['employee-summary']),
 
@@ -207,7 +207,7 @@
             this.$el.html(this.template(this.model.toJSON()));
 
             // returns the view instance so you can chain other commands after
-            // renderig the view
+            // rendering the view
             return this;
         }
     }));
