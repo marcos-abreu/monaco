@@ -22,12 +22,10 @@
         // cache any prefetched data for later use on the application
         if (options.prefetched) {
             _.each(options.prefetched, function(value, key) {
-                var expire;
-                if (_.isObject(value)) {
-                    expire = value.expire;
-                    value = value.data;
+                if (!value.data) {
+                    return;
                 }
-                this.local.set({resource: key, models:[]}, value, expire);
+                this.local.set({resource: key, models:[]}, value.data, value.expire);
             }, app);
             delete app.options.prefetched;
         }
