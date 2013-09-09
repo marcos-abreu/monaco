@@ -45,7 +45,7 @@
             // Add all unregistered routes before starting the history
             this.router._addRoutes();
 
-            Backbone.history.start({pushState: options.pushState});
+            Monaco.history.start({pushState: options.pushState});
 
             // trigger a custom event after the application has started
             this.trigger('started', this);
@@ -252,5 +252,8 @@
     });
 
     /* -- HISTORY ----------------------------------------------------------- */
-    Monaco.History = Backbone.History;
+
+    // Creates a reference to Backbone history instance in Monaco
+    Monaco.history = Backbone.history;
+
 }(window, window._, window.Backbone));
