@@ -69,6 +69,19 @@
             return this;
         },
 
+        // adds a subview after this view has been instanciated
+        // the parameter view should be on the same format you would include your views in a template
+        add : function(view) {
+            var keys = _.keys(view),
+                selector = keys[0],
+                options = view[selector];
+
+            if (!selector || !options) {
+                throw new Error('Invalid subview parameters');
+            }
+            this._subviewConstructor(options, selector);
+        },
+
         // creates the necessary subview instance(s), storing their reference
         _subviewConstructor : function(options, selector) {
             var ViewClass,
