@@ -252,6 +252,7 @@
     });
 
     /* -- HISTORY ----------------------------------------------------------- */
+    Monaco.History = Backbone.History;
 
     // Creates a reference to Backbone history instance in Monaco
     Monaco.history = Backbone.history;
