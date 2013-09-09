@@ -23,12 +23,12 @@
 
     Experiments.prototype = _.extend(Experiments.prototype, {
         // remove the experiment reference from the internal list
-        _removeReference: function(experiment) {
-            var index = this._experiments.indexOf(experiment);
-            if (index >= 0) {
-                this._experiments.splice(index, 1);
-            }
-        },
+        // _removeReference: function(experiment) {
+        //     var index = this._experiments.indexOf(experiment);
+        //     if (index >= 0) {
+        //         this._experiments.splice(index, 1);
+        //     }
+        // },
 
         // returns an experiment object based on a key search
         get: function(key) {
@@ -47,9 +47,16 @@
         },
 
         // remove all split tests
-        remove: function() {
+        // remove: function() {
+        //     _.each(this._experiments, function(experiment) {
+        //         experiment.remove();
+        //     });
+        // },
+
+        // opt-out the current user from all experiments
+        optout: function() {
             _.each(this._experiments, function(experiment) {
-                experiment.remove();
+                experiment.optout();
             });
         },
 
@@ -138,11 +145,17 @@
         },
 
         // remove this experiment
-        remove: function() {
-            var cookieOpt = this.options.cookie;
-            this.current = null;
-            this.cookie.set(cookieOpt.prefix + this.key, '', -1, cookieOpt.baseDomain);
-            this.parent._removeReference(this);
+        // remove: function() {
+        //     var cookieOpt = this.options.cookie;
+        //     this.current = null;
+        //     this.cookie.set(cookieOpt.prefix + this.key, '', -1, cookieOpt.baseDomain);
+        //     this.parent._removeReference(this);
+        // },
+
+        // optout the current user from a specific experiment, basically setting the cookie
+        // to the `this.original` property value value
+        optout: function() {
+            this.cookie.set(cookieOpt.prefix + this.key, this.original, cookieOpt.days, cookieOpt.baseDomain);
         },
 
         // saves the experiment data, when a user joins one variation of the experiment
