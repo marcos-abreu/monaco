@@ -85,7 +85,7 @@
         },
 
         selectMenuItem: function(menuItem) {
-            var fragment = Backbone.history.getFragment(),
+            var fragment = Monaco.history.getFragment(),
                 menuItem;
 
             $('.navbar .nav li').removeClass('active');
