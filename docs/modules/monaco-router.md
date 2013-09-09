@@ -8,13 +8,13 @@ RegEx Routes
 
     var app = new Monaco.Application();
     
-    app.addRoutes({
+    app.router.add({
         'users/:userid'                       : ['userProfile',  {regexp: {userid: /\d+/}],
         'users/:userid/videos/:videoid'       : ['userVideos',   {regexp: {userid: /\d+/, videoid: /\d+/}]
     });
 
 
-By adding **monaco-router** you can now use the same **Monaco.Router** `addRoutes` method to define regex constraints for your route by defining the `regexp` object in the second element of the route array value. The first element of the array value will still be the name of the controller associated with the route. The second element might have also other properties aside from the regexp object, see **reverse routing** bellow.
+By adding **monaco-router** module you can now use the same **Monaco.Router** `add` method to define regex constraints for your route by defining the `regexp` object in the second element of the route array value. The first element of the array value will still be the name of the controller associated with the route. The second element might have also other properties aside from the regexp object, see **reverse routing** bellow.
 
 Now when navigating to other routes, the router will take into consideration the regexp constraints you have defined, allowing you to build more specific url patterns.
 
@@ -32,14 +32,11 @@ This is important if you need to do some preprocessing or post processing. (e.g:
         'users/:userid/videos'                : ['userVideos',   {regexp: {userid : /\d+/}]
     });
 
-    /* ------ Defining which filters will be applied to which controllers ------- */
-    app.applyFilters(['isAuthenticated'], ['userProfile', 'userVideos']);
-    app.applyFilters(['cleanupFriends'], ['userVideos']);
 
+    /* ------ Defining filters -------------------------------------------------- */
 
-    /* ------ Filter function definition ---------------------------------------- */
     // sample of a before filter
-    app.addFilter('isAuthenticated', function(func, args) {
+    app.router.addFilter('isAuthenticated', function(func, args) {
         // logic to check if the user is authenticated, if it so return 
         // a value trutful value, otherwise a falsy value
 
@@ -47,8 +44,9 @@ This is important if you need to do some preprocessing or post processing. (e.g:
         return func.apply(this, args);
     });
 
+
     // sample of an after filter
-    app.addFilter('clearCachedVideos', function(func, args) {
+    app.router.addFilter('clearCachedVideos', function(func, args) {
         // execute all next functions (other filters not yet executed and then the original controller)
         result = func.apply(this, args);
 
@@ -62,13 +60,22 @@ This is important if you need to do some preprocessing or post processing. (e.g:
         return true;
     });
 
-The code above have created a sample application (`app`) and then added two routes to the application; it then defined a filter `isAuthenticated` that should wrap the controllers: `userProfile` and `userVideos`; then another filter that wrapped just the `userVideos`; after that it defined both the `isAuthenticated` and `clearCAchedVideos` filters.
+    /* ------ Applying Filters to Controllers ----------------------------------- */
 
-This means that before the `userProfile` and `userVideos` controller gets called the `isAuthenticated` filter will be called. The filter will receive as its first parameter a reference to the original function that this filter is wrapping, and as a second paramemter an array of original arguments used to call the controller.
+    app.router.add('userProfile', app.router.filter(['isAuthenticated'], function() {
+        // Controller Code
+    }));
 
-The `userVideos` controller gets wrapped twice, first with the `isAuthenticated`, then with the `clearCachedVideos`. You can execute code before or after you call the wrapped function. Whenever you are ready to call the original function being wrapped then just use the line: `func.apply(this, args)` where `args` is the second argument for the filter function.
+    app.router.add('userVideos', app.router.filter(['isAuthenticated', 'clearCachedVideos'], function() {
+        // Controller Code
+    }));
 
-If you want to abord and not execute the next function inline to be executed on your logic don't call the `func.apply(this, args);`
+
+The code above have created a sample application (`app`) and then added two routes to the application; it then defined the filter `isAuthenticated` and the filter `clearCachedVideos`; finally it applied the `isAutheticated` to the `userProfile` controller; and the `isAuthenticated` and the `clearCachedVideos` to the `userVideos` controller.
+
+This means that before the `userProfile` and `userVideos` controllers gets called the application will call the filter(s) in the same order they are listed in the `filter` method, each filter will define when to call the next function. If the filter don't call the next function and just ends, then script execution will stop and the controller will never be called.
+
+Each filters receive two parameters, the first parameter is a reference to the next function to be called, and the second parameter is an array with the original parameters expected by the controller. If the filter is the last filter in the list then the first parameter will be a reference to the controller function to be called.
 
 
 Reverse Routing

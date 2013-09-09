@@ -8,7 +8,7 @@ Creating New Application
 
 To create a new application using Monaco you just need to instantiate a new `Monaco.Application` object.
 
-    var myApp = new Monaco.Application('mobile');
+    var app = new Monaco.Application('mobile');
 
 ***Monaco.Application(appName, options)***
 
@@ -19,28 +19,28 @@ where:
 
 Your application object will have the following properties:
 
-`myApp.name` - the name of the application  
-`myApp.options` - options that passed when creating the application instance  
-`myApp.models` -  namespace that will be used to include the models you add to your application  
-`myApp.collections` - namespace that will be used to include the collections you add to your application  
-`myApp.views` - namespace that will be used to include the views you add to your application  
+`app.name` - the name of the application  
+`app.options` - options that passed when creating the application instance  
+`app.models` -  namespace that will be used to include the models you add to your application  
+`app.collections` - namespace that will be used to include the collections you add to your application  
+`app.views` - namespace that will be used to include the views you add to your application  
 
 Your application object is also extended from Backbone Events and therefore can be used as a global pub/sub event system, for example:
 
-    var myApp = new Monaco.Application('mobile');
-    myApp.on('started', function() {
+    var app = new Monaco.Application('mobile');
+    app.on('started', function() {
         console.log('application started');
     };
 
 or
 
-    myApp.trigger('user:loggedin', {user: user});
+    app.trigger('user:loggedin', {user: user});
 
 
 Adding Objects to your Application
 ----
 
-This module also provides a way of adding models, collections, views (and if you have included the **monaco-transition** module you can also use it to add transitions) to your application
+This module also provides a unified way of adding models, collections, views (and if you have included the **monaco-transition** module you can also use it to add transitions) to your application.
 
 ***add(name, object)***
 
@@ -51,9 +51,9 @@ where:
 
 sample:
 
-    var myApp = new Monaco('my-application');
+    var app = new Monaco('my-application');
 
-    myApp.add('Users', Monaco.Collection.extend({
+    app.add('Users', Monaco.Collection.extend({
         initialize : function() {
             ...
         }
@@ -62,17 +62,19 @@ sample:
 
 To access an object that was added to monaco using the `add` method you can use its appropriate namespace:
 
-    var users = new myApp.collections.Users();
+    var users = new app.collections.Users();
 
 
-Some of the advantages of using the `add` method instead of accessing the prototype of the application namespace and injecting the object direct in there are:
+Some of the advantages of using the `add` method instead of injecting the code manually inside of a class are:
 
-- Objects get automatically added to a defined namespace for each object type (Views: myApp.views | Models: myApp.models | Collections: myApp.collections | *Transitions: myApp.transitions)
+- The developer doesn't have to manually manipulate another's object prototype chain to inject your class.
+
+- Objects get automatically added to a defined namespace for each object type (Views: app.views | Models: app.models | Collections: app.collections | *Transitions: app.transitions)
 
 - Every object gets set a reference to the application
 
-    var users = new myApp.collections.Users();
-    console.log( myApp === users._app );
+    var users = new app.collections.Users();
+    console.log( app === users._app );
 
 - Avoids namespace objects from being overridden by mistake
 
@@ -88,12 +90,12 @@ where:
 
 **key** : *string* : key used to later retrieve the information stored  
 **value** : *mixed* : any javascript value you want to store for later use  
-**cache** : *boolean* : optional flag indicating if you want this information to be stored in local storage  
+**cache** : *boolean* : optional flag indicating if you want this information to be persisted (stored in local storage)
 
 sample:
 
-    var myApp = new Monaco('my-application');
-    myApp.set('language', 'en');
+    var app = new Monaco('my-application');
+    app.set('language', 'en');
 
 
 ***get(key)***
@@ -104,7 +106,7 @@ where:
 
 sample:
 
-    myApp.get('language');
+    app.get('language');
 
 ----
 
@@ -129,7 +131,7 @@ Different modules might provide additional `options` that can be passed when ini
 
 sample:
 
-    var myApp = new Monaco.Application(‘mobile’);
-    myApp.set(‘username’, ‘marcos’);
-    myApp.start({pushState: true});
+    var app = new Monaco.Application(‘mobile’);
+
+    app.start({pushState: true});
 

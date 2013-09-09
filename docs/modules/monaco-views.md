@@ -29,7 +29,7 @@ The following are the options you can pass for each subview:
 
 ----
 
-**css selector** : the css selector will be assigned to the subview as their target element if non `classView` is assigned to the subview. The selector will serve as the wrapper where the subview will be rendered - so the element the selector targets should be on the DOM tree by the time the subview is rendered ( this is usually accomplished by rendering the DOM element associated with the selector on the *master view* ).
+**css selector** : the css selector will be assigned to the subview as their target element if no `classView` is assigned to the subview. The selector will serve as the wrapper where the subview will be rendered - so the element the selector targets should be on the DOM tree by the time the subview is rendered ( this is usually accomplished by rendering the DOM element associated with the selector on the *master view* ).
 
 
 Creating simple subviews
@@ -240,3 +240,34 @@ In this case the css selector assigned to the subview doesn't need to be in the 
 ### add another subview dynamically
 
 If you need to add another subview to a *master view* (or any view) after this view has been instantiated (and even after it has been rendered) you can use the `add` method available in any `Monaco.View` object.
+
+If the master view has been rendered already you will have to manually render the subview you added, for that you can use the `children` property of the master view to access the subview and render it.
+
+    var app = new Monaco.Application('mobile');
+
+    ...
+
+    app.start();
+
+    ...
+
+    app.add('Profile', Monaco.View.extend({
+        views : {
+            '#header' : { template: Handlebars.templates['user.profile-header'] }
+        }
+    }));
+
+    ...
+
+    var profile = new app.views.Profile();
+    profile.render();
+
+    ...
+
+    profile.add({ '#footer': { template: Handlebars.templates['user.profile-footer'] } });
+
+    ...
+
+    profile.children['#footer'].render();
+
+    ...

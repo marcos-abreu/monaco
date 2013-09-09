@@ -3,7 +3,7 @@ monaco-experiments
 
 The premise behind experiments (split tests) is to try different ideas with the goal of increasing visitor's interest and effectiveness of your application. **monaco-experiments** provides the necessary tools to test all your ideas.
 
-By default **monaco-experiments** uses Google Analytics to store the data of your experiments, making it useful out of the box to a lot of applications, but if you want ot use another service or your own api to store the data of each experiment check the **Custom Configuration** session bellow.
+By default **monaco-experiments** uses Google Analytics to store the data of your experiments, making it useful out of the box to a lot of applications, but if you want ot use another service or your own api to store the data of each experiment check the **Custom Configuration** section bellow.
 
 Configuring your Experiments
 ----
@@ -61,11 +61,11 @@ To do that create separate controllers that has the naming ending with the suffi
     });
     
     app.addController('userProfileAB_V1', function(userId) {
-        // variation1 for the user-access-button experiment
+        // variation1 for the profile-friends experiment
     });
     
     app.addController('userProfileAB_V2', function(userId) {
-        // variation2 for the user-access-button experiment
+        // variation2 for the profile-friends experiment
     });
 
     app.start();
@@ -196,7 +196,7 @@ application
     });
 
     app.add('UserProfile', Monaco.View.extend({
-        template : Handlebars.templates[this.app.experiments.get('user-screen').template('user.profile')],
+        template : Handlebars.templates[app.experiments.get('user-screen').template('user.profile')],
         ...
     }));
 
@@ -226,7 +226,7 @@ The possible values of the `current` property are: the key set for one of the ex
 Custom Configuration
 ----
 
-Sometimes you will need to change the default configuration of **monaco-experiments** to better integrate the framwork with your application. You can configure the necessary properties for google analytics; the cookie api; or even change the service that store the experiment data.
+Sometimes you will need to change the default configuration of **monaco-experiments** to better integrate the framwork with your application. You can configure the necessary properties for google analytics; the cookie api; or even change the service that stores the experiment data.
 
 ### Configuring Google Analytics
 
@@ -264,7 +264,7 @@ In this example I'm assuming your cookie api has the following methods with the 
 
     var app = new Monaco.Application('mobile');
 
-You can see that we have replaced the `get` and `set` methods with our own implementation, what behind the scenes calls your own plugin methods. Also notice that we did that before creating our application object that will instanciate **Monaco.Experiments* automatically.
+You can see that we have replaced ***Monaco***'s `get` and `set` methods with our own implementation, and our implementation calls the custom plugin cookie respective methods. Also notice that we did that before creating our application object that will instanciate **Monaco.Experiments* automatically.
 
 ### Storing data using custom Service
 
@@ -275,7 +275,7 @@ If your application requires you to use another service to store the data from y
         this._gaq.push(['_trackEvent', 'experiments', 'join', (this.key + '|' + groupKey)]);
     };
 
-If you need to use a different service, or your own you would need to override this method with your own implementation:
+If you need to use a different service or your own, you need to override this method with your own implementation:
 
     Monaco.Experiment.prototype.saveGroup = function(groupKey) {
         // your logic here
@@ -301,5 +301,58 @@ If you have implemented your own services to store the experiment data, than you
 Cleaning up After
 ----
 
-One of the points developer seems to forget sometimes is that we should clear the extra code included for the experiments. Check the type of implementation you performed on the documentation above and reverse your changes leaving just the variation that has proven to perform better than the others.
+One of the points developer seems to forget sometimes is that he should clear the extra code included for the experiments.
+
+1. The first thing you should do is to reverse the changes you did based on the type of implementation chosen (refer to the topics above to know how the experiment can be implemented), leaving just the variation that has proven to perform better among all variations of your experiment.
+
+2. Remove the experiment configuration added, where you set the experiment and all its variations and the amount of users participating in the experiment.
+
+
+Opting Out
+----
+
+Sometimes you may allow your users to opt out from a specific experiment, if you need to do this please call the `optout` method from the experiment instance when that user is using the app.
+
+    var app = new Monaco.Application('mobile');
+
+    app.experiments.set('profile-friends', {
+        'variation1' : {suffix : 'AB_V1'},
+        'variation2' : {suffix : 'AB_V2'}
+    }, {users: 0.10});
+
+    app.experiments.get('profile-friends').split();
+
+    app.addRoutes({
+        'users/:id'                      : ['userProfile', { regex: {id: /\d+/ } }]
+        'users/:id/:experiment/opt-out'  : ['experimentOptout', { regex: { id: /\d+/, experiment: /[\w\-]+/ } }]
+    });
+
+    app.addController('userProfile', function(userId) {
+        // original controller
+    });
+
+    app.addController('userProfileAB_V1', function(userId) {
+        // variation 1
+    });
+
+    app.addController('userProfileAB_V2', function(userId) {
+        // variation 2
+    });
+
+    app.addController('experimentOptout', function(userId, experiment) {
+        if ( app.get('userid') === '12345' ) {
+            app.experiments.get('profile-friends').optout();
+        }
+        ....
+    });
+    
+    app.start();
+
+
+Notice that in the `experimentOptout` controller we have included a condition where if the `userId` is set to `12345` then the code will opt out the current user from the `profile-friends` experiment. Notice also that we have created a url that will trigger this logic, but you don't need to implement your logic this way you can implement it as part of your configuration; view logic; or basically anywhere after the experiment has been configured. 
+
+Be careful with the use of this feature, cause even though the experiment will initially have registered the user as part of a specific variation (or not) after opting out any events or pageview traking for that user won't reflect the variation he was initially assigned to, but instead will account towards the original implementation. Depending on the experiment you are running and the amount of users that have opted out, it might invalidate your experiment.
+
+
+
 

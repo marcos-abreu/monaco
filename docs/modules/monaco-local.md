@@ -27,22 +27,22 @@ When **monaco-local** is added to your application, you can define a global cach
 
 sample:
 
-    var myApp = new Monaco.Application('mobile', {
+    var app = new Monaco.Application('mobile', {
         cacheLocal : true,
         cacheExpire : 10
     });
 
-    myApp.add('Users', Monaco.Collection.extend({
+    app.add('Users', Monaco.Collection.extend({
         resource : 'users',
         url : 'http://www.sample.com/api/v2/users'
     }));
     
-    myApp.start();
+    app.start();
 
-    var users = new myApp.collections.Users();
+    var users = new app.collections.Users();
     users.fetch();
 
-The code above created a sample application `myApp` indicating that any collection data of this app should cached for 10 minutes, it then added a `Users` collection to the application, started the application; created an instance of the `Users` collection and fetched its data from the server.
+The code above created a sample application `app` indicating that any collection data of this app should cached for 10 minutes, it then added a `Users` collection to the application, started the application; created an instance of the `Users` collection and fetched its data from the server.
 
 The caching mechanism will work behind the scenes to (based on the configuration provided) store the fetched data locally so that subsequent fetch requests to the same collection (within the timeframe set up with the `cacheExpire` property) don't hit the server, but instead get the data that is available locally.
 
@@ -56,34 +56,34 @@ You can also define how a specific collection should behave when fetching its da
 
 sample:
 
-    var myApp = new Monaco.Application('mobile', {
+    var app = new Monaco.Application('mobile', {
         cacheLocal : true,
         cacheExpire : 10
     });
 
-    myApp.add('Users', Monaco.Collection.extend({
+    app.add('Users', Monaco.Collection.extend({
         resource : 'users',
         url : 'http://www.sample.com/api/v2/users',
         cacheLocal : false
     }));
     
-    myApp.add('Friends', Monaco.Collection.extend({
+    app.add('Friends', Monaco.Collection.extend({
         resource : 'friends',
         url : 'http://www.sample.com/api/v2/friends',
         cacheLocal : true,
         cacheExpire : 30
     }));
     
-    myApp.start();
+    app.start();
 
-    var users = new myApp.collections.Users();
+    var users = new app.collections.Users();
     users.fetch();
     
-    var friends = new myApp.collections.Friends();
+    var friends = new app.collections.Friends();
     friends.fetch();
 
 
-The code above created a sample Monaco application `myApp` with global cache enabled and set to 10 minutes, it then added a `Users` collection with cache set to false, created a `Friends` collection with cache set to true and expiration to 30 minutes after the data is first retrieved. It then started the application, created an instance of the `Users` collection, fetched its data, created an instance of the `Friends` collection and also fetched its data.
+The code above created a sample Monaco application `app` with global cache enabled and set to 10 minutes, it then added a `Users` collection with cache set to false, created a `Friends` collection with cache set to true and expiration to 30 minutes after the data is first retrieved. It then started the application, created an instance of the `Users` collection, fetched its data, created an instance of the `Friends` collection and also fetched its data.
 
 Even though globally we have defined that all collection data would be cached locally by 10 minutes after being fetched from the server, we overrode caching settings for the `Users` collection indicating that we don't want to cache any data fetched for this collection, this means that every time `fetch` is called for this collection the system will make a new request to the server to get the necessary data.
 
@@ -97,33 +97,33 @@ When performing a `fetch` call from a collection you can override both global ca
 
 sample:
 
-    var myApp = new Monaco.Application('mobile', {
+    var app = new Monaco.Application('mobile', {
         cacheLocal : true,
         cacheExpire : 10
     });
 
-    myApp.add('Users', Monaco.Collection.extend({
+    app.add('Users', Monaco.Collection.extend({
         resource : 'users',
         url : 'http://www.sample.com/api/v2/users',
         cacheLocal : false
     }));
     
-    myApp.add('Friends', Monaco.Collection.extend({
+    app.add('Friends', Monaco.Collection.extend({
         resource : 'friends',
         url : 'http://www.sample.com/api/v2/friends',
         cacheLocal : true,
         cacheExpire : 30
     }));
     
-    myApp.start();
+    app.start();
 
-    var users = new myApp.collections.Users();
+    var users = new app.collections.Users();
     users.fetch({
         cacheLocal : true,
         cacheExpire : 5
     });
     
-    var friends = new myApp.collections.Friends();
+    var friends = new app.collections.Friends();
     friends.fetch({
         cacheLocal : false;
     });
@@ -143,17 +143,17 @@ You can bypass this by setting the `fresh` property to `true` when performing a 
 
 sample:
 
-    var myApp = new Monaco.Application('mobile');
-    myApp.add('Users', Monaco.Collection.extend({
+    var app = new Monaco.Application('mobile');
+    app.add('Users', Monaco.Collection.extend({
         resource : 'users',
         url : 'http://www.sample.com/api/v2/users',
         cacheLocal : true,
         cacheExpire : 10
     }));
 
-    myApp.start();
+    app.start();
 
-    var users = new myApp.collections.Users();
+    var users = new app.collections.Users();
     users.fetch();
     
     ...
@@ -162,7 +162,7 @@ sample:
         fresh : true
     });
 
-On the code above we have created a sample Monaco application `myApp`, added a `Users` collection definition with cache set to 10 minutes, started the application, created a users collection instance and then fetched the data twice.
+On the code above we have created a sample Monaco application `app`, added a `Users` collection definition with cache set to 10 minutes, started the application, created a users collection instance and then fetched the data twice.
 
 The first `fetch` call will cache the response for 10 minutes; so lets say that the second `fetch` call was done before the original data is expired, if we haven't included the `fresh` property it would use the local data, but because we used this property the `fetch` call will bypass the local stored data and will make another request to the server.
 
@@ -170,6 +170,7 @@ The data returned by the second `fetch` call will replace the data stored by the
 
     ...
     users.fetch({
+        ...
         fresh : true,
         cacheLocal : false
     });
@@ -178,10 +179,12 @@ The data returned by the second `fetch` call will replace the data stored by the
 Forcing Cached Data only
 ----
 
-In some cases you might want the `fetch` calls to use only the local stored data, and never send a server request even if the data is not available. In this cases you can use the `localOnly` property
+In some cases you might want to work with local data only, basically not hiting the server whenever a feching collection data, in this case you can use the `localOnly` property. This property can be set per collection definition or per `fetch` call, whichever is more appropriate for your logic.
+
 
     ...
     users.fetch({
+        ...
         localOnly : true
     });
 
@@ -191,14 +194,14 @@ Caching individual Models
 
 Caching collections will probably be the most common (if not the only) type of caching you will need in your application, but in some cases you need to cache data from a `model.fetch` call. If you have this need then you should associate your model with a collection (where you will set the caching properties)
 
-    myApp.add('Users', Monaco.Collection.extend({
+    app.add('Users', Monaco.Collection.extend({
         resource : 'users',
         cacheLocal : true,
         cacheExpire : 720 // 12 hours
     }));
 
-    myApp.add('User', Monaco.Model.extend({
-        collection : myApp.collections.Users,
+    app.add('User', Monaco.Model.extend({
+        collection : app.collections.Users,
         ...
     }));
 
@@ -269,7 +272,7 @@ For your own video list the collection is cached for 2 minutes, but everyone els
 Clean up cached data
 ----
 
-From time to time you might want to clean up some cached data, this is an often task when developing your application, but it might also be used on the code you ship to your users.
+**monaco-local** automatically clean up expired data, and replace it with fresh data; but from time to time you might want to clean up some cached data, this is an often task when developing your application, but it might also be used on the code you ship to your users.
 
 **app.local.clear(resource)**
 
@@ -291,13 +294,12 @@ Another way of using **monaco-local** to cache the data needed is to prefetch so
 
     var app = new Monaco.Application({
         prefetched : {
-            users : [{"id": 1, "first_name": "john"}, {"id":2, "first_name": "maria"}],
-            videos : [{"id": 1, "title": "Homade Project"}, {"id": 2, "title": "Super Cool Video"}]
+            users : { expire: 50, data: [{"id": 1, "first_name": "john"}, {"id":2, "first_name": "maria"}] },
+            videos : { data: [{"id": 1, "title": "Homade Project"}, {"id": 2, "title": "Super Cool Video"}] }
         }
     });
 
-The `prefetched` property should be defined as an object where each key correspond to a collection `resource` property and its value is a list of models, basically the same object structure you would expect if you were doing a fetch call from the collection instance.
+The `prefetched` property should be defined as an object where each key correspond to a collection `resource` property and its value is a literal object with a required `data` property that is a list of models, basically the same object structure you would expect if you were doing a fetch call from the collection instance; and an optional `expire` property indicating how many minutes is the data valid for after being cached (if you don't provide the `expire` property then the app global expire or ***Monaco***'s default expire will be applied).
 
-The expiration for the prefetched data will be set following the configuration available on either the collection definition or for the global settings.
 
 

@@ -130,12 +130,74 @@ Still supper easy to implement and gives you the flexibility to organize the cod
 **Monaco.Model**
 ----
 
-A model is basically one related unit of data, if you compare with a table in a database, then the model would be one row of the table where you would get all the related attributes of one item. **Monaco.Model** inherits from Backbone.Model and therefore have all the functionality available in it. It also attach a default error method for failed fetch calls.
+A model is basically one related unit of data, if you compare with a table in a database, then the model would be one row of the table where you would get all the related attributes of one item. **Monaco.Model** inherits from *Backbone.Model* and therefore have all the functionality available in it. It also attach a default error method for failed fetch calls this default error method will trigger a 'fetch:error' event for the model that triggered the `fetch` call.
+
+To create a model you will use the `extend` method from the **Monaco.Model** class, this way your model class will inherit all functionality from **Monaco.Model**, without duplicating code. Whenever you call a method from one instance of your model object if the method is defined on your model class then it will use it, if not then it will look on the Class from where your model class extended from and if found it will execute it there. This pattern allows you to create complex class structures in a simple way.
+
+	app.add('User', Monaco.Model.extend({
+		initialize: function(id) {
+			this.id = id;
+		},
+
+		url: function() {
+			return '/users/' + this.id;
+		}
+
+		friends: function() {
+			// logic to return the user's friends
+		}
+	}));
+
+	app.add('UserOfTheWeek', app.models.User.extend({
+		url: function() {
+			'/users/thisweek'
+		}
+	}));
+
+On the code above we have created two models: `User` and `UserOfTheWeek`.
+
+The `User` model class extends from **Monaco.Model** and therefore gets all the functionality available on it, but it also adds some functionality of its own, such as the `initialize`, `url` and `friends` methods. The `initialize` method is also available on ***Monaco*** (inherited from *Backbone*) but as a noop function, since the `User` model class has implemented it all instances of the `User` class will use your implementation.
+
+The `UserOfTheWeek` model class extends from your custom `User` model class, and therefore it inherits all functionality from the `User` class. So even though you haven't created a `friends` method on the `UserOfTheWeek` model class this will be available to any instance of the class.
+
+For a complete documentation on *Model* check the [*Backbone.Model* documentation]().
 
 **Monaco.Collection**
 ----
 
-A collection is a list of data units, if you compare it with a table in a database, then the collection would be the table where you would have a list of models. **Monaco.Collection** inherits from Backbone.Collection and therefore have all the functionality available in it. It also attach a default error method for failed fetch calls.
+A collection is a list of data units, if you compare it with a table in a database, then the collection would be the table where you would have a list of models. **Monaco.Collection** inherits from *Backbone.Collection* and therefore have all the functionality available in it. It also attach a default error method for failed fetch calls, this default error method will trigger a `fetch:error` event for the collection that triggered the `fetch` call.
+
+To create a collection you will use the `extend` method from the **Monaco.Collection** class, this way your collection class will inherit all functionality from **Monaco.Collection**, without duplicating code. Whenever you call a method from one instance of your collection object if the method is defined on your collection class then it will use it, if not then it will look on the Class from where your collection class extended from and if found it will execute it there. This pattern allows you to create complex class structures in a really simple way.
+
+	app.add('Videos', Monaco.Collection.extend({
+		url: function() {
+			return '/videos';
+		},
+
+		parse: function(resp, options) {
+			return resp.videos;
+		},
+
+		short: function() {
+			return this.filter(function(video) {
+				return video.length <= 30;
+			});
+		}
+	}));
+
+	app.add('FeaturedVideos', app.collections.Videos.extend({
+		url: function() {
+			return '/videos/featured';
+		}
+	}));
+
+On the code above we have created two collections: `Videos` and `FeaturedVideos`.
+
+The `Video` collection class extends from **Monaco.Collection** and therefore gets all the functionality available on it, but it also adds some functionality of its own, such as the `url`, `parse` and `short` methods. The `parse` method is also available on ***Monaco*** (inherited from *Backbone*), since the `Videos` collection class has implemented it all instances of the `Videos` class will use your implementation.
+
+The `FeaturedVideos` collection class extends from your custom `Videos` collection class, and therefore it inherits all functionality from the `Videos` class. So even though you haven't created a `short` method on the `FeaturedVideos` collection class this will be available to any instance of the class.
+
+For a complete documentation on *Collection* check the [*Backbone.Collection* documentation]().
 
 **Local Caching**
 ----
@@ -154,14 +216,11 @@ By default whenever you instantiated **master view** all of its subviews will al
 **Monaco.Transition**
 ----
 
-**Monaco.Form**
+**Monaco.Analitics**
 ----
 
-**Analitics**
+**Monaco.Experiments**
 ----
 
-**Split Tests**
-----
-
-**Monaco Multirequests**
+**Monaco.Multirequests**
 ----

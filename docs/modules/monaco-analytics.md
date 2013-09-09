@@ -24,7 +24,7 @@ sample:
                 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
                 ga('create', 'UA-9999-Y');
-                // ga('send', 'pageview');
+                // ga('send', 'pageview'); // The app will do that automatically
 
             </script>
             <!-- End Google Analytics -->
@@ -46,7 +46,7 @@ The example above uses google analytics service with the new `analytics.js` trac
 Integrating with an analytics service
 ----
 
-By default Monaco is integrated with Google Analytics (the new analytics.js), but it can be easily integrated with any other analytics service or with the old Google Analytics tracking (ga.js) if needed. To do that you will need to override the `trackPageview` method of your application instance with your own implementation.
+By default Monaco is integrated with Google Analytics (the new analytics.js), but it can be easily integrated with any other analytics service or with the old Google Analytics tracking (ga.js) if needed. To do that you will need to override the `trackPageview` method from the **Monaco.Application** class with your own implementation.
 
 **application.trackPageview(fragment)**
 

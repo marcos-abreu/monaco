@@ -3,7 +3,7 @@ monaco-multirequest
 
 **monaco-multirequest** allows you to execute multiple async fetch requests and manage callbacks (success and error) after all of them are done.
 
-The main concept of **monaco-multirequest** is that either all requests will succeed triggering a unified `success` callback or if one fails, then all remaining requests will be aborted and the request error will be passed to the multirequest `error` callback.
+The main concept of **monaco-multirequest** is that either all requests will succeed triggering a unified `success` callback or if one fails, then all remaining fetch requests will be aborted and the request error response will be passed to the multirequest `error` callback.
 
 Multi Fetch Requests
 ----
@@ -76,7 +76,7 @@ The response object from each fetch call will have:
 Error Callback
 ----
 
-Whenever **monaco-multifetch** gets an error response from a `fetch` call then it will imediately abort any pending requests and execute the `error` callback passing along the original error parameters. In this case the `success` callback won't be executed even if some objects have already been completed with success.
+Whenever **monaco-multifetch** gets an error response from a `fetch` call then it will imediately abort any pending fetch requests and execute the `error` callback passing along the original error parameters. In this case the `success` callback won't be executed even if some objects have already been completed with success.
 
 The parameters you will receive are the original parameters from the `fetch` error:
 

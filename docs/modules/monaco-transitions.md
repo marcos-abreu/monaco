@@ -52,7 +52,7 @@ If you want to use a css transition you could do something like:
             fromView.$el.addClass('fadeOut'); // css class that have the fade out transition
             toView.$el.addClass('fadeIn'); // css class that have the fade in transition
 
-            //wait until the transitions finish and then close the fromView
+            // wait until the transitions finish and then close the fromView
             window.setTimeout( _.bind( function() {
                 toView.$el.removeClass("fadeIn");
                 fromView.remove();
@@ -62,7 +62,7 @@ If you want to use a css transition you could do something like:
         }
     }));
 
-Again the code above is a really simplistic implementation, but what it does is to render the `toView` and hide it, then it perform the css animation by adding the appropriate classes to the view elements; it then includes a function that will wait a quarter of a second (the same time the css animation will take to finish) and then clean up the toView class and close the fromView. By the end the method returns the toView.
+Again the code above is a really simplistic implementation, but what it does is to render the `toView` and hide it, then it perform the css animation by adding the appropriate classes to the view elements; it then includes a function that will wait a quarter of a second (the same time the css animation will take to finish) and then clean up the `toView` class and close the `fromView`; the last thing the method does is to return the `toView` that will be assigned to the `currentView` property of the application instance.
 
 Transitioning between Views
 ----
@@ -86,7 +86,7 @@ sample:
     var videoList = new app.views.VideoList();
     app.transitionTo(videoList);
 
-The code above creates a new view instance and instruct the app to transition to this newly created view using the default transition class.
+The code above creates a new view instance and instruct the `app` to transition to this newly created view using the default transition class.
 
 sample:
 
@@ -100,4 +100,4 @@ sample:
     var videoList = new app.views.VideoList();
     app.transitionTo(videoList, {}, app.transitions.PopupTransition);
 
-The code above creates a new view instance and instruct the app to transition to this newly created view using the `PopupTransition` class.
+The code above creates a new view instance and instruct the `app` to transition to this newly created view using the `PopupTransition` class.
