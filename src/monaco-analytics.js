@@ -16,7 +16,7 @@
         return matched;
     };
 
-    // Override this method if you are not using google analytics, but 
+    // Override this method if you are not using google analytics, but
     // instead another analytics service to track page views
     Monaco.History.prototype.trackPageview = function(fragment) {
         if( window.ga !== void 0 ) {
