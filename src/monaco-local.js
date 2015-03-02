@@ -53,21 +53,37 @@
         get : function( obj ) {
             var isCollection = _.has(obj, 'models'),
                 collection = isCollection ? obj : (obj.collection || null),
-                resource = collection ? _.result(collection, 'resource') : null;
+                resource = collection ? _.result(collection, 'resource') : _.result(obj, 'resource');
 
             if (resource) {
                 var data = this._getLocalData(resource);
                 if (data) {
                     data.resp = this.decompress(data.resp);
+
+                    // get cached model
                     if (!isCollection) {
-                        data = _.find(data.resp, function(item) {
-                            return item[obj.idAttribute] === obj.id;
-                        });
-                        if (data && (!data._ts || !this._isExpired(data))) {
-                            delete data._ts; // remove possible timestamp property
-                            return data;
+                        // extract data from model linked with a collection
+                        if (collection) {
+                            data = _.find(collection.parse(data.resp), function(item) {
+                                return item[obj.idAttribute] === obj.id;
+                            });
+
+                            // only this case needs to retest the expiration, since the expiration tested
+                            // in _getLocalData was from the collection, and the model might have its own
+                            // expiration rule
+                            if (data && (!data._ts || !this._isExpired(data))) {
+                                delete data._ts; // remove possible timestamp property
+                                return data;
+                            }
                         }
-                    } else {
+
+                        // extract data from model not linked with any collection
+                        else if(data.resp[obj.idAttribute] === obj.id) {
+                            return data.resp;
+                        }
+                    }
+                    // get cached collection
+                    else {
                         return data.resp;
                     }
                 }
@@ -79,29 +95,32 @@
         set : function(obj, data, expire) {
             var isCollection = _.has(obj, 'models'),
                 collection = isCollection ? obj : obj.collection || null,
-                resource = collection ? _.result(collection, 'resource') : null;
+                resource = collection ? _.result(collection, 'resource') : _.result(obj, 'resource');
             expire = (expire !== void 0) ? expire : false;
 
             if (!resource) {
                 // todo: find a way to log  - 'unable to identify object\'s resource'
                 return;
             }
-            if (!collection) {
-                //todo: find a way to log - 'unable to identify object\'s collection'
-                return;
-            }
 
-            if (!isCollection) {
-                // in case the model has expireLocal set for individual models
-                var modelExpire = expire;
-                if (modelExpire !== false || (modelExpire = _.result(obj, 'expireLocal')) !== void 0) {
+            // caching Model linked with Collection
+            if (!isCollection && collection) {
+                // in case the model has expireLocal set for
+                var modelExpire = expire || _.result(obj, 'expireLocal') ;
+                if (modelExpire) {
                     data = this._setExpire(data, modelExpire, true);
                 }
                 data = this._addToCollectionData(obj, data, collection);
+
+                expire = (expire !== false) ? expire : _.result(collection, 'expireLocal');
+            }
+            // Collections or Models NOT linked with any Collection
+            else {
+                expire = (expire !== false) ? expire : _.result(obj, 'expireLocal');
             }
 
             data = this.compress(data);
-            data = this._setExpire(data, (expire !== false ? expire : _.result(collection, 'expireLocal')));
+            data = this._setExpire(data, expire);
 
             this._storageSet(resource, data);
             this._memorySet(resource, data);
@@ -149,15 +168,15 @@
 
         // merge the model with the collection data
         _addToCollectionData : function(model, data, collection) {
-            var collectionData = this.get(collection);
-            if (!collectionData) {
-                collectionData = collection.toJSON();
+            var restfulData,
+                collectionData = this.get(collection);
+            if (collectionData) {
+                restfulData = collection.parse(collectionData);
+                collection.reset(restfulData, { silent: true });
             }
-            var rejectObj = {};
-            rejectObj[model.idAttribute] = model.id;
-            collectionData = _.reject(collectionData, rejectObj);
-            collectionData.push(data);
-            return collectionData;
+
+            collection.add( data, { silent: true, merge: true } );
+            return collection.revertParse && typeof collection.revertParse === 'function' ? collection.revertParse() : collection.toJSON();
         },
 
         // get the resource if it is available in memory
@@ -188,7 +207,12 @@
         // set the resource data in localStorage
         _storageSet : function(resource, data) {
             var key = this._getKey(resource),
+                keys;
+            try {
                 keys = window.localStorage.getItem('monaco-' + this._app.name + ':keys') || '{}';
+            } catch(e) {
+                return; // fail silently
+            }
 
             var newKeys = JSON.parse(keys);
             newKeys[key] = data._ts;
@@ -250,15 +274,23 @@
             }
 
             // clean-up the application keys
-            var keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
-            delete keys[key];
-            return this._app.set('monaco-' + this._app.name + ':keys', keys, true);
+            var keys;
+            try {
+                keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
+            } catch(e) {}
+            if (keys) {
+                delete keys[key];
+                return this._app.set('monaco-' + this._app.name + ':keys', keys, true);
+            }
         },
 
         // clear all resources associated with this application from localStorage and memory
         _clearAll : function() {
             // clean up localStorage
-            var keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
+            var keys = {};
+            try {
+                keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
+            } catch(e) {}
             _.each(keys, function(value, key) {
                 try {
                     var resource = key.split('#');
@@ -291,14 +323,53 @@
 
         // info: don't need to listen for the `destroy` model event, because it will
         //       trigger a remove from the collection
+
+        // listen to collection events and updates local caching accordingly
         this.on('add remove change reset', function() {
-            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {};
-            if (!options.fromLocal && 
+            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
+                data;
+
+            // if original call IS NOT a fetch from local storage and this collection
+            // should be cached
+            if (!options.fromLocal &&
                 (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
-                this._app.local.set(this, this.toJSON());
+
+                // ????
+                // this.fetch({localOnly: true, cacheLocal: false, silent: true});
+
+                // make sure the data has the same structure as the original server request
+                data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
+
+                // replace the local data with the new data
+                this._app.local.set(this, data);
             }
         }, this);
         return collectionInitialize.apply(this, arguments);
+    };
+
+    var modelInitialize = Monaco.Model.prototype.initialize;
+    Monaco.Model.prototype.initialize = function() {
+        // listen to collection events and updates local caching accordingly
+        this.on('change', function() {
+            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
+                data;
+
+            // if original call IS NOT a fetch from local storage and this collection
+            // should be cached
+            if (!options.fromLocal &&
+                (_.result(this, 'cacheLocal') === true || (this._app && this._app.local.autoCache === true))) {
+
+                // ????
+                // this.fetch({localOnly: true, cacheLocal: false, silent: true});
+
+                // make sure the data has the same structure as the original server request
+                data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
+
+                // replace the local data with the new data
+                this._app.local.set(this, data);
+            }
+        }, this);
+        return modelInitialize.apply(this, arguments);
     };
 
     /* -- SYNC ------------------------------------------------------------- */
@@ -331,17 +402,56 @@
                 return;
             }
             // Check the configuration levels and wrap the success call back if at any level we have cacheLocal defined
-            else if ((_.result(options, 'cacheLocal') === true) || // fetch level
-                (!_.has(options, 'cacheLocal') &&  isCollection && _.result(model, 'cacheLocal') === true) || // model/collection level
-                (!_.has(options, 'cacheLocal') && !isCollection && _.result(model.collection, 'cacheLocal') === true) || // model/collection level
-                (!_.has(options, 'cacheLocal') && (!_.has(model, 'cacheLocal')) && app.local.autoCache === true)) { // app level
-                var success = options.success;
-                options.success = function(resp, status, xhr) {
-                    app.local.set(model, resp, _.result(options, 'expireLocal'));
-                    if (success) {
-                        success.apply(this, arguments);
-                    }
-                };
+            // If we have a custom cache control key, we want to cache regardless of whether the object wants to cache or not
+            else {
+                var cacheLocal = false,
+                    success;
+
+                var customCachePolicy = (isCollection && model.cachePolicy) ? model.cachePolicy :
+                                          (!isCollection && model.collection) ? model.collection.cachePolicy :
+                                            (app.options.cachePolicy) ? app.options.cachePolicy : void 0;
+
+                //Determine if we need to do local caching
+
+                //Case 1: Custom Caching Policy supposedly sent by server response
+                cacheLocal = (customCachePolicy && customCachePolicy !== 'local');
+
+                //Case 2: cacheLocal specified to be true at app/collection/model/fetch level
+                if ((_.result(options, 'cacheLocal') === true) || // fetch level
+                    (!_.has(options, 'cacheLocal') &&  isCollection && _.result(model, 'cacheLocal') === true) || // collection level
+                      (!_.has(options, 'cacheLocal') && (!isCollection && model.collection) && _.result(model.collection, 'cacheLocal') === true) || // model (with collection) level
+                        (!_.has(options, 'cacheLocal') && (!isCollection && !model.collection) && _.result(model, 'cacheLocal') === true) || // model (no collection) level
+                            (!_.has(options, 'cacheLocal') && (!_.has(model, 'cacheLocal')) && app.local.autoCache === true)) { // app level
+                    cacheLocal = true;
+                }
+
+                if (cacheLocal) {
+                    success = options.success;
+                    options.success = function(resp, status, xhr) {
+
+                        // local caching policy will use the expiration defined or Monaco's default
+                        if (!customCachePolicy || customCachePolicy === 'local') {
+                            app.local.set(model, resp, _.result(options, 'expireLocal'));
+                        }
+
+                        // custom caching policy will use the expiration sent by the server
+                        // and if not available or too small it won't cache the resource
+                        else {
+                          var expire = xhr.getResponseHeader(customCachePolicy);
+                            if (expire) {
+                                // Cache-Control sends expire time in seconds, but Monaco uses minutes
+                                expire = parseInt(expire.match(/max-age=([\d]+)/)[1], 10);
+                                if (expire && ((expire / 60) > 0)) {
+                                    app.local.set(model, resp, (expire / 60));
+                                }
+                            }
+                        }
+
+                        if (success) {
+                            success.apply(this, arguments);
+                        }
+                    };
+                }
             }
         }
 
