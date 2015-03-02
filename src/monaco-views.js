@@ -8,7 +8,7 @@
         // application namespace
         namespace : 'views',
 
-        // subviews associated with this view with options to help define 
+        // subviews associated with this view with options to help define
         // and render each subview
         views : {},
 
@@ -22,10 +22,10 @@
             if (options.template) {
                 this.template = options.template;
             }
-            
+
             // children view instances
             this.children = {};
-            
+
             // instantiate each available subview
             _.each(this.views, this._subviewConstructor, this);
 
@@ -101,7 +101,7 @@
             // sets the collection parameter if available
             if (collection && !options.collectionItem) {
                 params.collection = collection;
-            } 
+            }
             // sets the model parameter if available
             else if (options.model || this.model) {
                 params.model = (options.model || this.model);
@@ -144,7 +144,7 @@
 
             // // wrap the generic addAll to inject the itemView and listWrapper properties
             if (!this[suffix].addAll) {
-                this[suffix].addAll = _.bind(function() { 
+                this[suffix].addAll = _.bind(function() {
                     var args = Array.prototype.slice.call(arguments, 0);
                     args.push({itemView: viewClass, listWrapper: selector, callback: function(view) {
                         view.parent = this;
@@ -163,7 +163,7 @@
 
             // for each model in the collection creates a new view with the passed parameters
             collection.each(function(model) {
-                viewParams = _.clone(params);
+                var viewParams = _.clone(params);
                 viewParams.model = model;
                 var view = new viewClass(viewParams);
                 view.parent = this;
@@ -189,7 +189,7 @@
                             //       include the targets for the viewClass and wrapper of the list
                             //       or if I should include them in the options object parameter instead
                             view[options.suffix].addAll(view.collection, {}, {
-                                itemView: options.viewClass ? option.viewClass.call(view) : Monaco.ViewClass,
+                                itemView: options.viewClass ? options.viewClass.call(view) : Monaco.ViewClass,
                                 listWrapper: selector
                             });
                         }

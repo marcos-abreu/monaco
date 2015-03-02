@@ -19,7 +19,7 @@
             palmDevice : Boolean( ua.match( /(PalmOS|PalmSource| Pre\/)/ ) ),
             smartMobileHints : Boolean( ua.match( /(smartphone|IEMobile)/ ) ),
             iPad : Boolean( ua.match( /iPad/ ) ),
-            androidTablet : Boolean( ua.match( /(GT-P1000|SGH-T849|SHW-M180S)/ ) ),
+            androidTablet : ( Boolean( ua.match( /Android/ ) ) && !Boolean( ua.match( /Mobile/ ) ) ) || Boolean( ua.match( /(GT-P1000|SGH-T849|SHW-M180S)/ ) ),
             tabletPC : Boolean( ua.match( /Tablet PC/ ) ),
             playBook : Boolean( ua.match( /PlayBook/ ) ),
             kindle : Boolean( ua.match( /(Kindle)/ ) )
@@ -50,6 +50,7 @@
                 result = null;
             if ( this.is.android ) {
                 re = /Android (\d+(?:\.\d+)+)/gi;
+                re.lastIndex = 0;
                 result = re.exec( this.ua );
                 if ( result.length == 2 ) {
                     return result[1];

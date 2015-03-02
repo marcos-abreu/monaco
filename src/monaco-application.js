@@ -25,7 +25,7 @@
 
         // create a router instance
         var RouterClass = options.RouterClass || Monaco.Router;
-        this.router = new RouterClass({ routes: options.routes });
+        this.router = new RouterClass({app: this, routes: options.routes});
 
         // trigger a global event for application module setup
         Monaco.trigger('app:built', this, options);
@@ -41,14 +41,14 @@
             if (!_.has(this, 'router')) {
                 throw new Error('missing router instance');
             }
-            
+
             // Add all unregistered routes before starting the history
             this.router._addRoutes();
 
-            Monaco.history.start({pushState: options.pushState});
+            Monaco.history.start(options);
 
-            // trigger a custom event after the application has started
-            this.trigger('started', this);
+            // trigger a global event for application module setup
+            Monaco.trigger('app:initialized', this, options);
         },
 
         // Interface used to add objects (models, collections, views and transitions) to your application
@@ -102,8 +102,11 @@
             persist = persist || false;
             // validation
             if (key === void 0 || value === void 0) {
-                throw new Error('set method required both key and value parameters');
+                throw new Error('set method required both key and value parameters { key: ' + key + ' | value: ' + value + ' }');
             }
+
+            // store the key/value in memory
+            this._settings[key] = value;
 
             // if persist is set to true then store the key/value in localStorage
             if (persist === true) {
@@ -114,10 +117,8 @@
                     return false;
                 }
             }
-
-            // store the key/value in memory
-            this._settings[key] = value;
-        }
+            return true;
+         }
     });
 
     // Allow the `Monaco` object to serve as a global event bus
@@ -130,7 +131,7 @@
         var error = options.error,
             router = ( this._app & this._app.router ) ? this._app.router : null;
 
-        // custom error method that will trigger a custom event before executing 
+        // custom error method that will trigger a custom event before executing
         // the error callback
         options.error = function(obj, resp, options) {
             if (router) {
@@ -144,35 +145,66 @@
     };
 
     /* -- COLLECTION ------------------------------------------------------- */
-    Monaco.Collection = Backbone.Collection.extend({
-        // application collection namespace
-        namespace : 'collections',
+    try {
+        Monaco.Collection = Backbone.Collection.extend({
+            // application collection namespace
+            namespace : 'collections',
 
-        // override the fetch method to add the default error router
-        fetch : function(options) {
-            options = fetchError.call(this, options);
-            return Backbone.Collection.prototype.fetch.call(this, options);
-        }
-    });
+            // override the fetch method to add the default error router
+            fetch : function(options) {
+                options = fetchError.call(this, options);
+                return Backbone.Collection.prototype.fetch.call(this, options);
+            }
+        });
+    }
+    catch(e) {
+        // this addresses an issue with some versions of google browser - better described
+        // by this ticket on backbone: https://github.com/jashkenas/backbone/issues/1475
+        // and this ticket on chrome forum: https://code.google.com/p/chromium/issues/detail?id=136380
+        // sample of user agent where the problem was observed:
+        //
+        // Mozilla/5.0 (Linux; U; Android 4.1.1; tr-tr; Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        // Mozilla/5.0 (Linux; U; Android 4.0.4; en-us; Next7P12-8G Build/IMM76I) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        //
+        // Note that not all Android 4.1.1 or Android 4.0.4 triggered the same misbehaviour
+        Monaco.Collection = Backbone.Collection;
+        Monaco.Collection.prototype.namespace = 'collections';
+
+    }
 
     /* -- MODEL ------------------------------------------------------------ */
-    Monaco.Model = Backbone.Model.extend({
-        // application model namespace
-        namespace : 'models',
+    try {
+        Monaco.Model = Backbone.Model.extend({
+            // application model namespace
+            namespace : 'models',
 
-        // override the fetch method to add the default error router
-        fetch : function(options) {
-            options = fetchError.call(this, options);
-            return Backbone.Model.prototype.fetch.call(this, options);
-        }
-    });
+            // override the fetch method to add the default error router
+            fetch : function(options) {
+                options = fetchError.call(this, options);
+                return Backbone.Model.prototype.fetch.call(this, options);
+            }
+        });
+    }
+    catch(e) {
+        // this addresses an issue with some versions of google browser - better described
+        // by this ticket on backbone: https://github.com/jashkenas/backbone/issues/1475
+        // and this ticket on chrome forum: https://code.google.com/p/chromium/issues/detail?id=136380
+        // sample of user agent where the problem was observed:
+        //
+        // Mozilla/5.0 (Linux; U; Android 4.1.1; tr-tr; Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        // Mozilla/5.0 (Linux; U; Android 4.0.4; en-us; Next7P12-8G Build/IMM76I) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        //
+        // Note that not all Android 4.1.1 or Android 4.0.4 triggered the same misbehaviour
+
+        Monaco.Model = Backbone.Model;
+        Monaco.Model.prototype.namespace = 'models';
+    }
 
     /* -- VIEW ------------------------------------------------------------- */
     Monaco.View = Backbone.View.extend({
         // application view namespace
         namespace : 'views'
     });
-      
 
     /* -- ROUTER ----------------------------------------------------------- */
     Monaco.Router = Backbone.Router.extend({
@@ -183,7 +215,8 @@
         _routes : [],
 
         // override the Backbone Router constructor
-        constructor : function() {
+        constructor : function(options) {
+            this.app = arguments.length > 0 ? arguments[0].app : void 0;
             var initialize = this.initialize; // keep the original initialize method
             // wrap the initialize method to store each route definition
             this.initialize = function(options) {
@@ -217,7 +250,7 @@
                 this._addRoute(route.key, route.value);
             }
         },
-        
+
         // adds one route into Backbone.Router
         _addRoute : function(route, options) {
             options = options || {};

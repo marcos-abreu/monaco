@@ -1,35 +1,3 @@
-(function(window, _){
-    'use strict';
-
-    var Monaco = window.Monaco = (window.Monaco || {});
-
-    /* -- UTILITIES -------------------------------------------------------- */
-    Monaco.utils = Monaco.utils || {};
-
-    Monaco.utils.setCookie = function( key, value, days, baseDomain ) {
-        days = ( days && _.isNumber(days) ) ? days : 365;
-
-        var date = new Date();
-        date.setTime( date.getTime() + ( days * 24 * 60 * 60 * 1000 ) );
-        var expires = '; expires=' + date.toGMTString();
-
-        value = escape( value );
-        var cookieString = key + '=' + value + expires + '; path=/;';
-        if ( baseDomain ) {
-            var domain = document.domain.split('.');
-            domain = '.' + domain[ domain.length - 2 ] + '.' + domain[ domain.length - 1 ];
-            cookieString += ' domain=' + domain + ';';
-        }
-        document.cookie = cookieString;
-    };
-
-    Monaco.utils.getCookie = function( key ) {
-        var result = null;
-        return ( result = new RegExp( '(?:^|; )' + encodeURIComponent( key ) + '=([^;]*)' ).exec( document.cookie ) ) ? result[1] : null;
-    };
-
-}(window, window._));
-
 (function(window, _) {
     'use strict';
 
@@ -65,19 +33,36 @@
     // expose the extend function
     utils.extend = extend;
 }(window, window._));
-(function(window, _) {
+(function(window, _){
     'use strict';
 
-    // Certain Android devices are having issues when a JSON.parse(null) call is executed.
-    // the following should fix this bug
+    var Monaco = window.Monaco = (window.Monaco || {});
 
-    var parse = JSON.parse;
-    JSON.parse = function(text) {
-        if (text) {
-            return parse(text);
+    /* -- UTILITIES -------------------------------------------------------- */
+    Monaco.utils = Monaco.utils || {};
+
+    Monaco.utils.setCookie = function( key, value, days, baseDomain ) {
+        days = ( days && _.isNumber(days) ) ? days : 365;
+
+        var date = new Date();
+        date.setTime( date.getTime() + ( days * 24 * 60 * 60 * 1000 ) );
+        var expires = '; expires=' + date.toGMTString();
+
+        value = escape( value );
+        var cookieString = key + '=' + value + expires + '; path=/;';
+        if ( baseDomain ) {
+            var domain = document.domain.split('.');
+            domain = '.' + domain[ domain.length - 2 ] + '.' + domain[ domain.length - 1 ];
+            cookieString += ' domain=' + domain + ';';
         }
-        return null;
+        document.cookie = cookieString;
     };
+
+    Monaco.utils.getCookie = function( key ) {
+        var result = null;
+        return ( result = new RegExp( '(?:^|; )' + encodeURIComponent( key ) + '=([^;]*)' ).exec( document.cookie ) ) ? result[1] : null;
+    };
+
 }(window, window._));
 
 (function(window, _, Backbone){
@@ -107,7 +92,7 @@
 
         // create a router instance
         var RouterClass = options.RouterClass || Monaco.Router;
-        this.router = new RouterClass({ routes: options.routes });
+        this.router = new RouterClass({app: this, routes: options.routes});
 
         // trigger a global event for application module setup
         Monaco.trigger('app:built', this, options);
@@ -123,14 +108,14 @@
             if (!_.has(this, 'router')) {
                 throw new Error('missing router instance');
             }
-            
+
             // Add all unregistered routes before starting the history
             this.router._addRoutes();
 
-            Monaco.history.start({pushState: options.pushState});
+            Monaco.history.start(options);
 
-            // trigger a custom event after the application has started
-            this.trigger('started', this);
+            // trigger a global event for application module setup
+            Monaco.trigger('app:initialized', this, options);
         },
 
         // Interface used to add objects (models, collections, views and transitions) to your application
@@ -184,8 +169,11 @@
             persist = persist || false;
             // validation
             if (key === void 0 || value === void 0) {
-                throw new Error('set method required both key and value parameters');
+                throw new Error('set method required both key and value parameters { key: ' + key + ' | value: ' + value + ' }');
             }
+
+            // store the key/value in memory
+            this._settings[key] = value;
 
             // if persist is set to true then store the key/value in localStorage
             if (persist === true) {
@@ -196,10 +184,8 @@
                     return false;
                 }
             }
-
-            // store the key/value in memory
-            this._settings[key] = value;
-        }
+            return true;
+         }
     });
 
     // Allow the `Monaco` object to serve as a global event bus
@@ -212,7 +198,7 @@
         var error = options.error,
             router = ( this._app & this._app.router ) ? this._app.router : null;
 
-        // custom error method that will trigger a custom event before executing 
+        // custom error method that will trigger a custom event before executing
         // the error callback
         options.error = function(obj, resp, options) {
             if (router) {
@@ -226,35 +212,66 @@
     };
 
     /* -- COLLECTION ------------------------------------------------------- */
-    Monaco.Collection = Backbone.Collection.extend({
-        // application collection namespace
-        namespace : 'collections',
+    try {
+        Monaco.Collection = Backbone.Collection.extend({
+            // application collection namespace
+            namespace : 'collections',
 
-        // override the fetch method to add the default error router
-        fetch : function(options) {
-            options = fetchError.call(this, options);
-            return Backbone.Collection.prototype.fetch.call(this, options);
-        }
-    });
+            // override the fetch method to add the default error router
+            fetch : function(options) {
+                options = fetchError.call(this, options);
+                return Backbone.Collection.prototype.fetch.call(this, options);
+            }
+        });
+    }
+    catch(e) {
+        // this addresses an issue with some versions of google browser - better described
+        // by this ticket on backbone: https://github.com/jashkenas/backbone/issues/1475
+        // and this ticket on chrome forum: https://code.google.com/p/chromium/issues/detail?id=136380
+        // sample of user agent where the problem was observed:
+        //
+        // Mozilla/5.0 (Linux; U; Android 4.1.1; tr-tr; Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        // Mozilla/5.0 (Linux; U; Android 4.0.4; en-us; Next7P12-8G Build/IMM76I) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        //
+        // Note that not all Android 4.1.1 or Android 4.0.4 triggered the same misbehaviour
+        Monaco.Collection = Backbone.Collection;
+        Monaco.Collection.prototype.namespace = 'collections';
+
+    }
 
     /* -- MODEL ------------------------------------------------------------ */
-    Monaco.Model = Backbone.Model.extend({
-        // application model namespace
-        namespace : 'models',
+    try {
+        Monaco.Model = Backbone.Model.extend({
+            // application model namespace
+            namespace : 'models',
 
-        // override the fetch method to add the default error router
-        fetch : function(options) {
-            options = fetchError.call(this, options);
-            return Backbone.Model.prototype.fetch.call(this, options);
-        }
-    });
+            // override the fetch method to add the default error router
+            fetch : function(options) {
+                options = fetchError.call(this, options);
+                return Backbone.Model.prototype.fetch.call(this, options);
+            }
+        });
+    }
+    catch(e) {
+        // this addresses an issue with some versions of google browser - better described
+        // by this ticket on backbone: https://github.com/jashkenas/backbone/issues/1475
+        // and this ticket on chrome forum: https://code.google.com/p/chromium/issues/detail?id=136380
+        // sample of user agent where the problem was observed:
+        //
+        // Mozilla/5.0 (Linux; U; Android 4.1.1; tr-tr; Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        // Mozilla/5.0 (Linux; U; Android 4.0.4; en-us; Next7P12-8G Build/IMM76I) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30
+        //
+        // Note that not all Android 4.1.1 or Android 4.0.4 triggered the same misbehaviour
+
+        Monaco.Model = Backbone.Model;
+        Monaco.Model.prototype.namespace = 'models';
+    }
 
     /* -- VIEW ------------------------------------------------------------- */
     Monaco.View = Backbone.View.extend({
         // application view namespace
         namespace : 'views'
     });
-      
 
     /* -- ROUTER ----------------------------------------------------------- */
     Monaco.Router = Backbone.Router.extend({
@@ -265,7 +282,8 @@
         _routes : [],
 
         // override the Backbone Router constructor
-        constructor : function() {
+        constructor : function(options) {
+            this.app = arguments.length > 0 ? arguments[0].app : void 0;
             var initialize = this.initialize; // keep the original initialize method
             // wrap the initialize method to store each route definition
             this.initialize = function(options) {
@@ -299,7 +317,7 @@
                 this._addRoute(route.key, route.value);
             }
         },
-        
+
         // adds one route into Backbone.Router
         _addRoute : function(route, options) {
             options = options || {};
@@ -346,631 +364,12 @@
 
     var Monaco = window.Monaco = (window.Monaco || {});
 
-    // Local Cache Application setup
-    Monaco.on('app:built', function(app, options) {
-        // set a reference to the application into the local cache
-        app.local._app = app;
-
-        // check the global cacheLocal property for the application
-        if (_.has(options, 'cacheLocal')) {
-            app.local.autoCache = Boolean(_.result(options, 'cacheLocal'));
-        }
-
-        // check the global cacheExpire property for the application
-        if (_.has(options, 'cacheExpire')) {
-            var cacheExpire = _.result(options, 'cacheExpire');
-            app.local.cacheExpire = (_.isNull(cacheExpire) || _.isNumber(cacheExpire)) ? cacheExpire : void 0;
-        }
-
-        // cache any prefetched data for later use on the application
-        if (options.prefetched) {
-            _.each(options.prefetched, function(value, key) {
-                if (!value.data) {
-                    return;
-                }
-                this.local.set({resource: key, models:[]}, value.data, value.expire);
-            }, app);
-            delete app.options.prefetched;
-        }
-    });
-
-    // overrides Monaco.Application add method to check for the required `resources` property
-    var applicationAdd = Monaco.Application.prototype.add;
-    Monaco.Application.prototype.add = function(className, Class) {
-        if (Class.prototype.namespace === 'collections' && (!Class.prototype.resource || Class.prototype.resource === '')) {
-            throw new Error('required `resource` property missing from this collection definition');
-        }
-        return applicationAdd.apply(this, arguments);
-    };
-
-    // Application Local Cache Object
-    Monaco.Application.prototype.local = {
-        // by default the application won't auto cache your api calls
-        autoCache : false,
-
-        // default cache expire (in minutes) if you enable local caching
-        cacheExpire : 30,
-
-        // get an object from local cache
-        // return null instead of undefined to comply with the localStorage getItem api
-        get : function( obj ) {
-            var isCollection = _.has(obj, 'models'),
-                collection = isCollection ? obj : (obj.collection || null),
-                resource = collection ? _.result(collection, 'resource') : null;
-
-            if (resource) {
-                var data = this._getLocalData(resource);
-                if (data) {
-                    data.resp = this.decompress(data.resp);
-                    if (!isCollection) {
-                        data = _.find(data.resp, function(item) {
-                            return item[obj.idAttribute] === obj.id;
-                        });
-                        if (data && (!data._ts || !this._isExpired(data))) {
-                            delete data._ts; // remove possible timestamp property
-                            return data;
-                        }
-                    } else {
-                        return data.resp;
-                    }
-                }
-            }
-            return void 0;
-        },
-
-        // set an object in local cache
-        set : function(obj, data, expire) {
-            var isCollection = _.has(obj, 'models'),
-                collection = isCollection ? obj : obj.collection || null,
-                resource = collection ? _.result(collection, 'resource') : null;
-            expire = (expire !== void 0) ? expire : false;
-
-            if (!resource) {
-                // todo: find a way to log  - 'unable to identify object\'s resource'
-                return;
-            }
-            if (!collection) {
-                //todo: find a way to log - 'unable to identify object\'s collection'
-                return;
-            }
-
-            if (!isCollection) {
-                // in case the model has expireLocal set for individual models
-                var modelExpire = expire;
-                if (modelExpire !== false || (modelExpire = _.result(obj, 'expireLocal')) !== void 0) {
-                    data = this._setExpire(data, modelExpire, true);
-                }
-                data = this._addToCollectionData(obj, data, collection);
-            }
-
-            data = this.compress(data);
-            data = this._setExpire(data, (expire !== false ? expire : _.result(collection, 'expireLocal')));
-
-            this._storageSet(resource, data);
-            this._memorySet(resource, data);
-            return true;
-        },
-
-        // clear a specific resource or all resources
-        clear : function(resource) {
-            resource = resource || null;
-            if (!resource) {
-                return this._clearAll();
-            }
-            return this._clearItem(resource);
-        },
-
-        // compress data to be stored - override this with your own data compress implementation
-        compress : function(data) { return data; },
-
-        // decompress data - override this with your own data decompress implementation
-        decompress : function(data) { return data; },
-
-        // get the local data for a collection resource
-        _getLocalData : function(resource) {
-            var localData = null,
-                caching = ['memory', 'storage'];
-
-            for (var i = 0, j = caching.length; i < j; i++) {
-                localData = this['_'+caching[i]+'Get'](resource);
-                if (localData && !this._isExpired(localData)) {
-                    if (caching[i] === 'storage') {
-                       this._memorySet(resource, localData);
-                    }
-                    return _.clone(localData);
-                }
-                // todo: add an option on the local caching setup that allows it to control
-                //       the following behaviour
-                // clean up the expired data
-                else if(localData) {
-                    this.clear(resource);
-                }
-            }
-
-            return null;
-        },
-
-        // merge the model with the collection data
-        _addToCollectionData : function(model, data, collection) {
-            var collectionData = this.get(collection);
-            if (!collectionData) {
-                collectionData = collection.toJSON();
-            }
-            var rejectObj = {};
-            rejectObj[model.idAttribute] = model.id;
-            collectionData = _.reject(collectionData, rejectObj);
-            collectionData.push(data);
-            return collectionData;
-        },
-
-        // get the resource if it is available in memory
-        // returns the object or if the object is not found it returns
-        // null ( to comply with the localStorage specs)
-        _memoryGet : function(resource) {
-            return this._memory ? this._memory[resource] : null;
-        },
-
-        // set the resource data in memory
-        _memorySet : function(resource, data) {
-            this._memory = this._memory || {};
-            this._memory[resource] = data;
-        },
-
-        // get the resource if it is available in localStorage
-        // returns the object or if the object is not found null
-        _storageGet : function(resource) {
-            var result;
-            try {
-                result = window.localStorage.getItem(this._getKey(resource));
-            } catch(e) {
-                return null;
-            }
-            return (result === undefined || result === 'undefined' || result === null) ? null : JSON.parse(result);
-        },
-
-        // set the resource data in localStorage
-        _storageSet : function(resource, data) {
-            var key = this._getKey(resource),
-                keys = window.localStorage.getItem('monaco-' + this._app.name + ':keys') || '{}';
-
-            var newKeys = JSON.parse(keys);
-            newKeys[key] = data._ts;
-            try {
-                window.localStorage.setItem('monaco-' + this._app.name + ':keys', JSON.stringify(newKeys));
-                window.localStorage.setItem(key, JSON.stringify(data));
-            } catch(e) {
-                // todo: add a warning here
-                try {
-                    // resetting the keys to its original value if either the new keys or data failed
-                    window.localStorage.setItem('monaco-' + this._app.name + ':keys', keys);
-                } catch(exception) {
-                    // fail silently - todo: add a warning here
-                }
-            }
-        },
-
-        // add the expire timestamp to the data object
-        _setExpire : function(data, expire, asProperty) {
-            var timestamp = null;
-            expire = ( _.isNumber( expire ) || _.isNull( expire ) ) ? expire : void 0;
-            if ( !_.isNull( expire ) ) {
-                var date = new Date();
-                date.setMinutes( date.getMinutes() + ( expire || this.cacheExpire ) );
-                timestamp = date.getTime();
-            }
-            // if asProperty is set to true then append the timestamp to the data
-            // usefull for setting expire for individual methods
-            if (asProperty === true) {
-                data._ts = timestamp;
-                return data;
-            }
-            return {
-                _ts : timestamp,
-                resp : data
-            };
-        },
-
-        // check if the data object is expired
-        _isExpired : function(data) {
-            var expire = data._ts,
-                now = new Date();
-            return ( !_.isNull( expire ) && now.getTime() > expire );
-        },
-
-        // clear a resource item from localStorage and memory
-        _clearItem : function(resource) {
-            var key = this._getKey(resource);
-            // remove the item from local storage
-            try {
-                window.localStorage.removeItem(key);
-            } catch(e) {
-                throw new Error('unable to remove the localStorage key: ' + key);
-            }
-
-            // remove the item from memory
-            if ( _.has(this._memory, resource) ) {
-                delete this._memory[resource];
-            }
-
-            // clean-up the application keys
-            var keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
-            delete keys[key];
-            return this._app.set('monaco-' + this._app.name + ':keys', keys, true);
-        },
-
-        // clear all resources associated with this application from localStorage and memory
-        _clearAll : function() {
-            // clean up localStorage
-            var keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
-            _.each(keys, function(value, key) {
-                try {
-                    var resource = key.split('#');
-                    resource = resource[1];
-                    window.localStorage.removeItem(key);
-                } catch(e) {
-                    // do nothing
-                }
-            }, this);
-
-            // clean up memory
-            this._memory = {};
-
-            // clean-up the application keys
-            this._app.set('monaco-' + this._app.name + ':keys', {}, true);
-        },
-
-        // get a key based on the resource name and the application
-        _getKey : function(resource) {
-            return this._app.name + '#' + resource;
-        }
-    };
-
-    var collectionInitialize = Monaco.Collection.prototype.initialize;
-    Monaco.Collection.prototype.initialize = function() {
-        // todo: the `remove` and `add` events are called once per each model what causes
-        //       this method to reset the collection multiple times, if there was a way of
-        //       knowing that a certain event is the last in a series of events fired then
-        //       we could minimize the number of times we reset the collection local cache
-
-        // info: don't need to listen for the `destroy` model event, because it will
-        //       trigger a remove from the collection
-        this.on('add remove change reset', function() {
-            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {};
-            if (!options.fromLocal && 
-                (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
-                this._app.local.set(this, this.toJSON());
-            }
-        }, this);
-        return collectionInitialize.apply(this, arguments);
-    };
-
-    /* -- SYNC ------------------------------------------------------------- */
-    Monaco.sync = Backbone.sync;
-
-    // override the Monaco (Backbone) sync method, so that read calls make
-    // usage of the local caching data for Monaco Models or Collections
-    Backbone.sync = function(method, model, options) {
-        options = options || {};
-        var app = model._app, // A Monaco Model or Collection will have a reference to the application
-            localOnly = (options.localOnly === true || model.localOnly === true);
-        if (app && method === 'read') {
-            // Attempt to retrieve the data from local cache and if succeed it will call the appropriated success method
-            var data = (options.fresh === true ) ? null : app.local.get(model);
-            if (data) {
-                options.fromLocal = true;
-                if (options.success) {
-                    options.success(data);
-                }
-                return true;
-            }
-
-            var isCollection = _.has(model, 'models');
-
-            // call the `error` callback if no data is found and `localOnly` is set to true
-            if (localOnly === true) {
-                if (options.error) {
-                    options.error({}, "Error: resource not found locally", {});
-                }
-                return;
-            }
-            // Check the configuration levels and wrap the success call back if at any level we have cacheLocal defined
-            else if ((_.result(options, 'cacheLocal') === true) || // fetch level
-                (!_.has(options, 'cacheLocal') &&  isCollection && _.result(model, 'cacheLocal') === true) || // model/collection level
-                (!_.has(options, 'cacheLocal') && !isCollection && _.result(model.collection, 'cacheLocal') === true) || // model/collection level
-                (!_.has(options, 'cacheLocal') && (!_.has(model, 'cacheLocal')) && app.local.autoCache === true)) { // app level
-                var success = options.success;
-                options.success = function(resp, status, xhr) {
-                    app.local.set(model, resp, _.result(options, 'expireLocal'));
-                    if (success) {
-                        success.apply(this, arguments);
-                    }
-                };
-            }
-        }
-
-        // return earlier for model/collections or request options set to localOnly
-        if (localOnly === true) {
-            return;
-        }
-        return Monaco.sync(method, model, options);
-    };
-}(window, window._, window.Backbone));
-
-(function(window, _, Backbone){
-    'use strict';
-
-    var Monaco = window.Monaco = (window.Monaco || {});
-
-    // override the collection constructor to assign a cid to every collection
-    // we don't need to do the same for models, since models already have a cid
-    var Collection = Monaco.Collection;
-    Monaco.Collection = Collection.extend({
-        constructor : function() {
-            this.cid = _.uniqueId('c');
-            Collection.prototype.constructor.apply(this, arguments);
-        }
-    });
-
-    // global application method to simplify the multi fetch request call
-    Monaco.Application.prototype.multiFetch = function(objects, options) {
-        var pool = new Monaco.MultiRequest(objects);
-        return pool.fetch(options);
-    };
-
-    // Manages multiple async fetch requests
-    Monaco.MultiRequest = function(objects) {
-        this._responses = {};
-        this._requests = {};
-        this._objects = [];
-        this.cid = _.uniqueId('mr-');
-        // this.id = null;
-
-        this.beingAborted = false; // track if the multirequest is being aborted
-        this.errorCalled = false; // track if the error callback was already called
-
-        this.add(objects);
-    };
-
-    Monaco.MultiRequest.prototype = {
-        // add objects (models/collections) to the internal list of objects
-        add: function(objects) {
-            objects = _.isArray(objects) ? objects : [objects];
-            for (var i = 0, l = objects.length; i < l; i++) {
-                this._objects.push(objects[i]);
-            }
-
-            // this.id = this.cid+'|'+_.size(this._objects);
-        },
-
-        // fetch all the internal objects tracking the result of each response
-        // if one fails all remaining will be aborted and an optional error callback will be called
-        // if all succeeds than an optional success callback will be called
-        fetch: function(options) {
-            var success = options.success,
-                error = options.error;
-
-            this.beingAborted = false;
-            this.errorCalled = false;
-
-            for (var i = 0, l = this._objects.length; i < l; i++) {
-                var reqOptions = _.clone(options);
-                reqOptions.multiRequest = (i+1)+'/'+this.id;
-
-                reqOptions.success = _.bind(function(object, resp, options) {
-                    if (!this.beingAborted) {
-                        this._success.apply(this, arguments);
-                        if (!options.fromLocal && _.size(this._requests) === 0 && success) {
-                            return success.call(this, this._responses);
-                        }
-                    }
-                }, this);
-
-                reqOptions.error = _.bind(function() {
-                    this._error.apply(this, arguments);
-                    if (error) {
-                        // make sure the error callback is just called once per multifetch call
-                        if (this.beingAborted && !this.errorCalled) {
-                            this.errorCalled = true;
-                            return error.apply(this, arguments);
-                        }
-                    }
-                }, this);
-
-                // local cached fetch requests will return the boolean true immediately
-                var result = this._objects[i].fetch(reqOptions);
-                if (result && !_.isBoolean(result)) {
-                    this._requests[this._objects[i].cid] = result;
-                }
-            }
-
-            // if requests is empty, but responses are not, then call the success
-            // this will happen when all responses came from local cache
-            if (!this.beingAborted && _.size(this._requests) === 0 && _.size(this._responses) > 0 && success) {
-                return success.call(this, this._responses);
-            }
-
-            return this;
-        },
-
-        // abort one request based on the object's cid or all requests if no cid is provided
-        abort: function(cid) {
-            var requests = {};
-            if (cid && !this._requests[cid]) {
-                throw new Error('invalid cid: ' + cid + ' - request not found!');
-            } else if (cid) {
-                requests[cid] = this._requests[cid];
-            } else {
-                requests = this._requests;
-            }
-
-            this.beingAborted = true;
-
-            _.each(requests, function(request, key) {
-                // abort fetch incomplete requests ( 4 === complete request )
-                if (request.readyState !== 4) {
-                    request.abort('stale');
-                }
-
-                // remove the request from the pool
-                delete this._requests[key];
-            }, this);
-        },
-
-        // wrapper success method for each fetch request, that will track the response
-        // and properly manages the internal list of requests
-        _success : function(object, resp, options) {
-            options = options || {};
-
-            // store the current response
-            this._responses[object.cid] = {
-                object: object,
-                resp : resp,
-                options : options
-            };
-
-            // if the data came from local cache, then no request was done so need
-            // to remove it from the pool
-            if (options.fromLocal === true) {
-                return;
-            }
-
-            // remove the request from the pool
-            delete this._requests[object.cid];
-        },
-
-        // wrapper error method for each fetch request, that will abort all
-        // pending requests
-        _error : function(object, resp, options) {
-            // remove the request from the pool
-            delete this._requests[object.cid];
-
-            // abort all pending requests
-            this.abort();
-        }
-    };
-}(window, window._, window.Backbone));
-
-(function(window, _, Backbone) {
-    'use strict';
-    var Monaco = window.Monaco = (window.Monaco || {});
-
-    /* -- ROUTER ----------------------------------------------------------- */
-    // Cached regular expressions for matching named param parts and splatted
-    // parts of route strings.
-    var optionalParam = /\((.*?)\)/g;
-    var namedParam    = /(\(\?)?:\w+/g;
-    var splatParam    = /\*\w+/g;
-    var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
-
-    // Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
-    _.extend(Monaco.Router.prototype, {
-        // return the regexp option of the specific router if available 
-        // otherwise undefined will be returned
-        _routeConstraints : function(routeKey) {
-            // var value = this._routes[route];
-            var route = _.find(this._routes, function(route) {
-                return route.key === routeKey;
-            });
-            if (route && route.value && _.isArray(route.value) && route.value.length > 1 && _.isObject(route.value[1])) {
-                return route.value[1].regexp;
-            }
-            return void 0;
-        },
-
-        // override the original Backbone method to deal with the regex constraints
-        _routeToRegExp : function(route) {
-            var constraints = this._routeConstraints(route);
-            route = route.replace(escapeRegExp, '\\$&')
-                         .replace(optionalParam, '(?:$1)?')
-                         .replace(namedParam, function(match, optional){
-                            // this `if` is the only difference from the original method from Backbone
-                            if (constraints && constraints[match.substr(1)]) {
-                                var reStr = constraints[match.substr(1)].toString();
-                                return '(' + reStr.slice(1, reStr.lastIndexOf('/')) + ')';
-                            }
-                            return optional ? match : '([^\/]+)';
-                         })
-                         .replace(splatParam, '(.*?)');
-            return new RegExp('^' + route + '$');
-        },
-
-        filter : function(filters, controller) {
-            for (var i = (filters.length - 1) , l = 0; i >= l; i-- ) {
-                var next = controller;
-                controller = this._wrapFilter(filters[i], next);
-            }
-
-            return controller;
-        },
-
-        // internal list of filters
-        _filters : {},
-
-        _wrapFilter: function(filter, next) {
-            return _.bind(function() { 
-                this._filters[filter].call(this, next, arguments);
-            }, this);
-        },
-
-        // adds a filter method to list of filters
-        addFilter : function(name, callback) {
-            if (this._filters[name]) {
-                throw new Error('This filter already exists: ' + name);
-            }
-            this._filters[name] = callback;
-        },
-
-        // returns the original route definition based on the url name informed
-        _getByName: function(name) {
-            var possibleRoutes = _.map(this._routes, function(options, route) {
-                if (_.isArray(options) && options.length > 1) {
-                    if ((_.isString(options[1]) && options[1] === name) ||
-                        (_.isObject(options[1]) && options.name === name)) {
-                        return route;
-                    }
-                }
-                return null;
-            });
-
-            route = _.compact(possibleRoutes);
-            if (route.length > 0) {
-                return route[0];
-            }
-            return false;
-        },
-
-        // returns a reverse url based on the url name and parameters passed to it. 
-        // This url won't be validated against the regexp constraints even if available.
-        // Neither it will validate if you provided enough parameters, the missing
-        // parameters will be displayed as the original url definition.
-        reverse: function(name, params) {
-            var url = '';
-            params = params || {};
-            if (!name) {
-                throw new Error('required `name` parameter for `reverse` method');
-            }
-
-            url = this._getByName(name);
-            _.each(params, function(value, key) {
-                url = url.replace(':'+key, value);
-            });
-
-            return url;
-        }
-    });
-}(window, window._, window.Backbone));
-
-(function(window, _, Backbone){
-    'use strict';
-
-    var Monaco = window.Monaco = (window.Monaco || {});
-
     var View = Monaco.View;
     Monaco.View = View.extend({
         // application namespace
         namespace : 'views',
 
-        // subviews associated with this view with options to help define 
+        // subviews associated with this view with options to help define
         // and render each subview
         views : {},
 
@@ -984,10 +383,10 @@
             if (options.template) {
                 this.template = options.template;
             }
-            
+
             // children view instances
             this.children = {};
-            
+
             // instantiate each available subview
             _.each(this.views, this._subviewConstructor, this);
 
@@ -1063,7 +462,7 @@
             // sets the collection parameter if available
             if (collection && !options.collectionItem) {
                 params.collection = collection;
-            } 
+            }
             // sets the model parameter if available
             else if (options.model || this.model) {
                 params.model = (options.model || this.model);
@@ -1106,7 +505,7 @@
 
             // // wrap the generic addAll to inject the itemView and listWrapper properties
             if (!this[suffix].addAll) {
-                this[suffix].addAll = _.bind(function() { 
+                this[suffix].addAll = _.bind(function() {
                     var args = Array.prototype.slice.call(arguments, 0);
                     args.push({itemView: viewClass, listWrapper: selector, callback: function(view) {
                         view.parent = this;
@@ -1125,7 +524,7 @@
 
             // for each model in the collection creates a new view with the passed parameters
             collection.each(function(model) {
-                viewParams = _.clone(params);
+                var viewParams = _.clone(params);
                 viewParams.model = model;
                 var view = new viewClass(viewParams);
                 view.parent = this;
@@ -1151,7 +550,7 @@
                             //       include the targets for the viewClass and wrapper of the list
                             //       or if I should include them in the options object parameter instead
                             view[options.suffix].addAll(view.collection, {}, {
-                                itemView: options.viewClass ? option.viewClass.call(view) : Monaco.ViewClass,
+                                itemView: options.viewClass ? options.viewClass.call(view) : Monaco.ViewClass,
                                 listWrapper: selector
                             });
                         }
@@ -1239,6 +638,581 @@
             $( info.listWrapper || this.listWrapper ).append(result);
         }
     });
+}(window, window._, window.Backbone));
+
+(function(window, _, Backbone) {
+    'use strict';
+    var Monaco = window.Monaco = (window.Monaco || {});
+
+    /* -- ROUTER ----------------------------------------------------------- */
+    // Cached regular expressions for matching named param parts and splatted
+    // parts of route strings.
+    var optionalParam = /\((.*?)\)/g;
+    var namedParam    = /(\(\?)?:\w+/g;
+    var splatParam    = /\*\w+/g;
+    var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
+
+    // Monaco.Router.prototype = _.extend(Monaco.Router.prototype, {
+    // _.extend(Monaco.Router.prototype, {
+        // return the regexp option of the specific router if available
+        // otherwise undefined will be returned
+        Monaco.Router.prototype._routeConstraints = function(routeKey) {
+            // var value = this._routes[route];
+            var route = _.find(this._routes, function(route) {
+                return route.key === routeKey;
+            });
+            if (route && route.value && _.isArray(route.value) && route.value.length > 1 && _.isObject(route.value[1])) {
+                return route.value[1].regexp;
+            }
+            return void 0;
+        };
+
+        // override the original Backbone method to deal with the regex constraints
+        Monaco.Router.prototype._routeToRegExp = function(route) {
+            var constraints = this._routeConstraints(route);
+            route = route.replace(escapeRegExp, '\\$&')
+                         .replace(optionalParam, '(?:$1)?')
+                         .replace(namedParam, function(match, optional){
+                            // this `if` is the only difference from the original method from Backbone
+                            if (constraints && constraints[match.substr(1)]) {
+                                var reStr = constraints[match.substr(1)].toString();
+                                return '(' + reStr.slice(1, reStr.lastIndexOf('/')) + ')';
+                            }
+                            return optional ? match : '([^\/]+)';
+                         })
+                         .replace(splatParam, '(.*?)');
+            return new RegExp('^' + route + '$');
+        };
+
+        Monaco.Router.prototype.filter = function(filters, controller) {
+            for (var i = (filters.length - 1) , l = 0; i >= l; i-- ) {
+                var next = controller;
+                controller = this._wrapFilter(filters[i], next);
+            }
+
+            return controller;
+        };
+
+        // internal list of filters
+        Monaco.Router.prototype._filters = {};
+
+        Monaco.Router.prototype._wrapFilter = function(filter, next) {
+            return _.bind(function() {
+                this._filters[filter].call(this, next, arguments);
+            }, this);
+        };
+
+        // adds a filter method to list of filters
+        Monaco.Router.prototype.addFilter = function(name, callback) {
+            if (this._filters[name]) {
+                throw new Error('This filter already exists: ' + name);
+            }
+            this._filters[name] = callback;
+        };
+
+        // returns the original route definition based on the url name informed
+        Monaco.Router.prototype._getByName = function(name) {
+            var possibleRoutes = _.map(this._routes, function(options, route) {
+                if (_.isArray(options) && options.length > 1) {
+                    if ((_.isString(options[1]) && options[1] === name) ||
+                        (_.isObject(options[1]) && options.name === name)) {
+                        return route;
+                    }
+                }
+                return null;
+            });
+
+            var route = _.compact(possibleRoutes);
+            if (route.length > 0) {
+                return route[0];
+            }
+            return false;
+        };
+
+        // returns a reverse url based on the url name and parameters passed to it.
+        // This url won't be validated against the regexp constraints even if available.
+        // Neither it will validate if you provided enough parameters, the missing
+        // parameters will be displayed as the original url definition.
+        Monaco.Router.prototype.reverse = function(name, params) {
+            var url = '';
+            params = params || {};
+            if (!name) {
+                throw new Error('required `name` parameter for `reverse` method');
+            }
+
+            url = this._getByName(name);
+            _.each(params, function(value, key) {
+                url = url.replace(':'+key, value);
+            });
+
+            return url;
+        };
+    // });
+}(window, window._, window.Backbone));
+
+(function(window, _, Backbone){
+    'use strict';
+
+    var Monaco = window.Monaco = (window.Monaco || {});
+
+    // Local Cache Application setup
+    Monaco.on('app:built', function(app, options) {
+        // set a reference to the application into the local cache
+        app.local._app = app;
+
+        // check the global cacheLocal property for the application
+        if (_.has(options, 'cacheLocal')) {
+            app.local.autoCache = Boolean(_.result(options, 'cacheLocal'));
+        }
+
+        // check the global cacheExpire property for the application
+        if (_.has(options, 'cacheExpire')) {
+            var cacheExpire = _.result(options, 'cacheExpire');
+            app.local.cacheExpire = (_.isNull(cacheExpire) || _.isNumber(cacheExpire)) ? cacheExpire : void 0;
+        }
+
+        // cache any prefetched data for later use on the application
+        if (options.prefetched) {
+            _.each(options.prefetched, function(value, key) {
+                if (!value.data) {
+                    return;
+                }
+                this.local.set({resource: key, models:[]}, value.data, value.expire);
+            }, app);
+            delete app.options.prefetched;
+        }
+    });
+
+    // overrides Monaco.Application add method to check for the required `resources` property
+    var applicationAdd = Monaco.Application.prototype.add;
+    Monaco.Application.prototype.add = function(className, Class) {
+        if (Class.prototype.namespace === 'collections' && (!Class.prototype.resource || Class.prototype.resource === '')) {
+            throw new Error('required `resource` property missing from this collection definition');
+        }
+        return applicationAdd.apply(this, arguments);
+    };
+
+    // Application Local Cache Object
+    Monaco.Application.prototype.local = {
+        // by default the application won't auto cache your api calls
+        autoCache : false,
+
+        // default cache expire (in minutes) if you enable local caching
+        cacheExpire : 30,
+
+        // get an object from local cache
+        // return null instead of undefined to comply with the localStorage getItem api
+        get : function( obj ) {
+            var isCollection = _.has(obj, 'models'),
+                collection = isCollection ? obj : (obj.collection || null),
+                resource = collection ? _.result(collection, 'resource') : _.result(obj, 'resource');
+
+            if (resource) {
+                var data = this._getLocalData(resource);
+                if (data) {
+                    data.resp = this.decompress(data.resp);
+
+                    // get cached model
+                    if (!isCollection) {
+                        // extract data from model linked with a collection
+                        if (collection) {
+                            data = _.find(collection.parse(data.resp), function(item) {
+                                return item[obj.idAttribute] === obj.id;
+                            });
+
+                            // only this case needs to retest the expiration, since the expiration tested
+                            // in _getLocalData was from the collection, and the model might have its own
+                            // expiration rule
+                            if (data && (!data._ts || !this._isExpired(data))) {
+                                delete data._ts; // remove possible timestamp property
+                                return data;
+                            }
+                        }
+
+                        // extract data from model not linked with any collection
+                        else if(data.resp[obj.idAttribute] === obj.id) {
+                            return data.resp;
+                        }
+                    }
+                    // get cached collection
+                    else {
+                        return data.resp;
+                    }
+                }
+            }
+            return void 0;
+        },
+
+        // set an object in local cache
+        set : function(obj, data, expire) {
+            var isCollection = _.has(obj, 'models'),
+                collection = isCollection ? obj : obj.collection || null,
+                resource = collection ? _.result(collection, 'resource') : _.result(obj, 'resource');
+            expire = (expire !== void 0) ? expire : false;
+
+            if (!resource) {
+                // todo: find a way to log  - 'unable to identify object\'s resource'
+                return;
+            }
+
+            // caching Model linked with Collection
+            if (!isCollection && collection) {
+                // in case the model has expireLocal set for
+                var modelExpire = expire || _.result(obj, 'expireLocal') ;
+                if (modelExpire) {
+                    data = this._setExpire(data, modelExpire, true);
+                }
+                data = this._addToCollectionData(obj, data, collection);
+
+                expire = (expire !== false) ? expire : _.result(collection, 'expireLocal');
+            }
+            // Collections or Models NOT linked with any Collection
+            else {
+                expire = (expire !== false) ? expire : _.result(obj, 'expireLocal');
+            }
+
+            data = this.compress(data);
+            data = this._setExpire(data, expire);
+
+            this._storageSet(resource, data);
+            this._memorySet(resource, data);
+            return true;
+        },
+
+        // clear a specific resource or all resources
+        clear : function(resource) {
+            resource = resource || null;
+            if (!resource) {
+                return this._clearAll();
+            }
+            return this._clearItem(resource);
+        },
+
+        // compress data to be stored - override this with your own data compress implementation
+        compress : function(data) { return data; },
+
+        // decompress data - override this with your own data decompress implementation
+        decompress : function(data) { return data; },
+
+        // get the local data for a collection resource
+        _getLocalData : function(resource) {
+            var localData = null,
+                caching = ['memory', 'storage'];
+
+            for (var i = 0, j = caching.length; i < j; i++) {
+                localData = this['_'+caching[i]+'Get'](resource);
+                if (localData && !this._isExpired(localData)) {
+                    if (caching[i] === 'storage') {
+                       this._memorySet(resource, localData);
+                    }
+                    return _.clone(localData);
+                }
+                // todo: add an option on the local caching setup that allows it to control
+                //       the following behaviour
+                // clean up the expired data
+                else if(localData) {
+                    this.clear(resource);
+                }
+            }
+
+            return null;
+        },
+
+        // merge the model with the collection data
+        _addToCollectionData : function(model, data, collection) {
+            var restfulData,
+                collectionData = this.get(collection);
+            if (collectionData) {
+                restfulData = collection.parse(collectionData);
+                collection.reset(restfulData, { silent: true });
+            }
+
+            collection.add( data, { silent: true, merge: true } );
+            return collection.revertParse && typeof collection.revertParse === 'function' ? collection.revertParse() : collection.toJSON();
+        },
+
+        // get the resource if it is available in memory
+        // returns the object or if the object is not found it returns
+        // null ( to comply with the localStorage specs)
+        _memoryGet : function(resource) {
+            return this._memory ? this._memory[resource] : null;
+        },
+
+        // set the resource data in memory
+        _memorySet : function(resource, data) {
+            this._memory = this._memory || {};
+            this._memory[resource] = data;
+        },
+
+        // get the resource if it is available in localStorage
+        // returns the object or if the object is not found null
+        _storageGet : function(resource) {
+            var result;
+            try {
+                result = window.localStorage.getItem(this._getKey(resource));
+            } catch(e) {
+                return null;
+            }
+            return (result === undefined || result === 'undefined' || result === null) ? null : JSON.parse(result);
+        },
+
+        // set the resource data in localStorage
+        _storageSet : function(resource, data) {
+            var key = this._getKey(resource),
+                keys;
+            try {
+                keys = window.localStorage.getItem('monaco-' + this._app.name + ':keys') || '{}';
+            } catch(e) {
+                return; // fail silently
+            }
+
+            var newKeys = JSON.parse(keys);
+            newKeys[key] = data._ts;
+            try {
+                window.localStorage.setItem('monaco-' + this._app.name + ':keys', JSON.stringify(newKeys));
+                window.localStorage.setItem(key, JSON.stringify(data));
+            } catch(e) {
+                // todo: add a warning here
+                try {
+                    // resetting the keys to its original value if either the new keys or data failed
+                    window.localStorage.setItem('monaco-' + this._app.name + ':keys', keys);
+                } catch(exception) {
+                    // fail silently - todo: add a warning here
+                }
+            }
+        },
+
+        // add the expire timestamp to the data object
+        _setExpire : function(data, expire, asProperty) {
+            var timestamp = null;
+            expire = ( _.isNumber( expire ) || _.isNull( expire ) ) ? expire : void 0;
+            if ( !_.isNull( expire ) ) {
+                var date = new Date();
+                date.setMinutes( date.getMinutes() + ( expire || this.cacheExpire ) );
+                timestamp = date.getTime();
+            }
+            // if asProperty is set to true then append the timestamp to the data
+            // usefull for setting expire for individual methods
+            if (asProperty === true) {
+                data._ts = timestamp;
+                return data;
+            }
+            return {
+                _ts : timestamp,
+                resp : data
+            };
+        },
+
+        // check if the data object is expired
+        _isExpired : function(data) {
+            var expire = data._ts,
+                now = new Date();
+            return ( !_.isNull( expire ) && now.getTime() > expire );
+        },
+
+        // clear a resource item from localStorage and memory
+        _clearItem : function(resource) {
+            var key = this._getKey(resource);
+            // remove the item from local storage
+            try {
+                window.localStorage.removeItem(key);
+            } catch(e) {
+                throw new Error('unable to remove the localStorage key: ' + key);
+            }
+
+            // remove the item from memory
+            if ( _.has(this._memory, resource) ) {
+                delete this._memory[resource];
+            }
+
+            // clean-up the application keys
+            var keys;
+            try {
+                keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
+            } catch(e) {}
+            if (keys) {
+                delete keys[key];
+                return this._app.set('monaco-' + this._app.name + ':keys', keys, true);
+            }
+        },
+
+        // clear all resources associated with this application from localStorage and memory
+        _clearAll : function() {
+            // clean up localStorage
+            var keys = {};
+            try {
+                keys = JSON.parse(window.localStorage.getItem('monaco-' + this._app.name + ':keys')) || {};
+            } catch(e) {}
+            _.each(keys, function(value, key) {
+                try {
+                    var resource = key.split('#');
+                    resource = resource[1];
+                    window.localStorage.removeItem(key);
+                } catch(e) {
+                    // do nothing
+                }
+            }, this);
+
+            // clean up memory
+            this._memory = {};
+
+            // clean-up the application keys
+            this._app.set('monaco-' + this._app.name + ':keys', {}, true);
+        },
+
+        // get a key based on the resource name and the application
+        _getKey : function(resource) {
+            return this._app.name + '#' + resource;
+        }
+    };
+
+    var collectionInitialize = Monaco.Collection.prototype.initialize;
+    Monaco.Collection.prototype.initialize = function() {
+        // todo: the `remove` and `add` events are called once per each model what causes
+        //       this method to reset the collection multiple times, if there was a way of
+        //       knowing that a certain event is the last in a series of events fired then
+        //       we could minimize the number of times we reset the collection local cache
+
+        // info: don't need to listen for the `destroy` model event, because it will
+        //       trigger a remove from the collection
+
+        // listen to collection events and updates local caching accordingly
+        this.on('add remove change reset', function() {
+            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
+                data;
+
+            // if original call IS NOT a fetch from local storage and this collection
+            // should be cached
+            if (!options.fromLocal &&
+                (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
+
+                // ????
+                // this.fetch({localOnly: true, cacheLocal: false, silent: true});
+
+                // make sure the data has the same structure as the original server request
+                data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
+
+                // replace the local data with the new data
+                this._app.local.set(this, data);
+            }
+        }, this);
+        return collectionInitialize.apply(this, arguments);
+    };
+
+    var modelInitialize = Monaco.Model.prototype.initialize;
+    Monaco.Model.prototype.initialize = function() {
+        // listen to collection events and updates local caching accordingly
+        this.on('change', function() {
+            var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
+                data;
+
+            // if original call IS NOT a fetch from local storage and this collection
+            // should be cached
+            if (!options.fromLocal &&
+                (_.result(this, 'cacheLocal') === true || (this._app && this._app.local.autoCache === true))) {
+
+                // ????
+                // this.fetch({localOnly: true, cacheLocal: false, silent: true});
+
+                // make sure the data has the same structure as the original server request
+                data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
+
+                // replace the local data with the new data
+                this._app.local.set(this, data);
+            }
+        }, this);
+        return modelInitialize.apply(this, arguments);
+    };
+
+    /* -- SYNC ------------------------------------------------------------- */
+    Monaco.sync = Backbone.sync;
+
+    // override the Monaco (Backbone) sync method, so that read calls make
+    // usage of the local caching data for Monaco Models or Collections
+    Backbone.sync = function(method, model, options) {
+        options = options || {};
+        var app = model._app, // A Monaco Model or Collection will have a reference to the application
+            localOnly = (options.localOnly === true || model.localOnly === true);
+        if (app && method === 'read') {
+            // Attempt to retrieve the data from local cache and if succeed it will call the appropriated success method
+            var data = (options.fresh === true ) ? null : app.local.get(model);
+            if (data) {
+                options.fromLocal = true;
+                if (options.success) {
+                    options.success(data);
+                }
+                return true;
+            }
+
+            var isCollection = _.has(model, 'models');
+
+            // call the `error` callback if no data is found and `localOnly` is set to true
+            if (localOnly === true) {
+                if (options.error) {
+                    options.error({}, "Error: resource not found locally", {});
+                }
+                return;
+            }
+            // Check the configuration levels and wrap the success call back if at any level we have cacheLocal defined
+            // If we have a custom cache control key, we want to cache regardless of whether the object wants to cache or not
+            else {
+                var cacheLocal = false,
+                    success;
+
+                var customCachePolicy = (isCollection && model.cachePolicy) ? model.cachePolicy :
+                                          (!isCollection && model.collection) ? model.collection.cachePolicy :
+                                            (app.options.cachePolicy) ? app.options.cachePolicy : void 0;
+
+                //Determine if we need to do local caching
+
+                //Case 1: Custom Caching Policy supposedly sent by server response
+                cacheLocal = (customCachePolicy && customCachePolicy !== 'local');
+
+                //Case 2: cacheLocal specified to be true at app/collection/model/fetch level
+                if ((_.result(options, 'cacheLocal') === true) || // fetch level
+                    (!_.has(options, 'cacheLocal') &&  isCollection && _.result(model, 'cacheLocal') === true) || // collection level
+                      (!_.has(options, 'cacheLocal') && (!isCollection && model.collection) && _.result(model.collection, 'cacheLocal') === true) || // model (with collection) level
+                        (!_.has(options, 'cacheLocal') && (!isCollection && !model.collection) && _.result(model, 'cacheLocal') === true) || // model (no collection) level
+                            (!_.has(options, 'cacheLocal') && (!_.has(model, 'cacheLocal')) && app.local.autoCache === true)) { // app level
+                    cacheLocal = true;
+                }
+
+                if (cacheLocal) {
+                    success = options.success;
+                    options.success = function(resp, status, xhr) {
+
+                        // local caching policy will use the expiration defined or Monaco's default
+                        if (!customCachePolicy || customCachePolicy === 'local') {
+                            app.local.set(model, resp, _.result(options, 'expireLocal'));
+                        }
+
+                        // custom caching policy will use the expiration sent by the server
+                        // and if not available or too small it won't cache the resource
+                        else {
+                          var expire = xhr.getResponseHeader(customCachePolicy);
+                            if (expire) {
+                                // Cache-Control sends expire time in seconds, but Monaco uses minutes
+                                expire = parseInt(expire.match(/max-age=([\d]+)/)[1], 10);
+                                if (expire && ((expire / 60) > 0)) {
+                                    app.local.set(model, resp, (expire / 60));
+                                }
+                            }
+                        }
+
+                        if (success) {
+                            success.apply(this, arguments);
+                        }
+                    };
+                }
+            }
+        }
+
+        // return earlier for model/collections or request options set to localOnly
+        if (localOnly === true) {
+            return;
+        }
+        return Monaco.sync(method, model, options);
+    };
 }(window, window._, window.Backbone));
 
 (function(window, _, Backbone){
@@ -1383,7 +1357,7 @@
         if ( !_.isNumber( options.users ) || options.users > 1 || options.users < 0 ) {
             throw new Error( 'Error processing experiment: \'' + key + '\' - users not defined within allowed range' );
         }
-        // since the variations will be chosen evenly you can't have more variations than 
+        // since the variations will be chosen evenly you can't have more variations than
         // the percentage number of users participating in the experiment
         this.usersPerGroup = Math.floor( ( options.users * 100 ) / _.size( groups ) );
         if ( this.usersPerGroup < 1 ) {
@@ -1427,7 +1401,14 @@
         },
 
         // return the value of a variation based on its key
+        // if no key is provided and the split was already done
+        // this method will return the value of the chosen group
         get: function(key) {
+            if (!key && this.current) {
+                return this.groups[this.current];
+            } else if ( !key ) {
+                return void 0;
+            }
             return this.groups[key];
         },
 
@@ -1457,6 +1438,7 @@
         // optout the current user from a specific experiment, basically setting the cookie
         // to the `this.original` property value value
         optout: function() {
+            var cookieOpt = this.options.cookie;
             this.cookie.set(cookieOpt.prefix + this.key, this.original, cookieOpt.days, cookieOpt.baseDomain);
         },
 
@@ -1465,6 +1447,14 @@
         saveGroup: function(groupKey) {
             _gaq.push(['_setCustomVar', this.options.ga.slot, this.key, groupKey, this.options.ga.scope]);
             _gaq.push(['_trackEvent', 'experiments', 'join', (this.key + '|' + groupKey)]);
+        },
+
+        toJSON: function() {
+            return {
+                current: this.current,
+                group: this.get(),
+                groups: this.groups
+            };
         },
 
         // returns an array of 100 items based on the probability of each group
@@ -1504,7 +1494,7 @@
         return matched;
     };
 
-    // Override this method if you are not using google analytics, but 
+    // Override this method if you are not using google analytics, but
     // instead another analytics service to track page views
     Monaco.History.prototype.trackPageview = function(fragment) {
         if( window.ga !== void 0 ) {
