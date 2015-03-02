@@ -81,7 +81,7 @@
         if ( !_.isNumber( options.users ) || options.users > 1 || options.users < 0 ) {
             throw new Error( 'Error processing experiment: \'' + key + '\' - users not defined within allowed range' );
         }
-        // since the variations will be chosen evenly you can't have more variations than 
+        // since the variations will be chosen evenly you can't have more variations than
         // the percentage number of users participating in the experiment
         this.usersPerGroup = Math.floor( ( options.users * 100 ) / _.size( groups ) );
         if ( this.usersPerGroup < 1 ) {
@@ -125,7 +125,14 @@
         },
 
         // return the value of a variation based on its key
+        // if no key is provided and the split was already done
+        // this method will return the value of the chosen group
         get: function(key) {
+            if (!key && this.current) {
+                return this.groups[this.current];
+            } else if ( !key ) {
+                return void 0;
+            }
             return this.groups[key];
         },
 
@@ -155,6 +162,7 @@
         // optout the current user from a specific experiment, basically setting the cookie
         // to the `this.original` property value value
         optout: function() {
+            var cookieOpt = this.options.cookie;
             this.cookie.set(cookieOpt.prefix + this.key, this.original, cookieOpt.days, cookieOpt.baseDomain);
         },
 
@@ -163,6 +171,14 @@
         saveGroup: function(groupKey) {
             _gaq.push(['_setCustomVar', this.options.ga.slot, this.key, groupKey, this.options.ga.scope]);
             _gaq.push(['_trackEvent', 'experiments', 'join', (this.key + '|' + groupKey)]);
+        },
+
+        toJSON: function() {
+            return {
+                current: this.current,
+                group: this.get(),
+                groups: this.groups
+            };
         },
 
         // returns an array of 100 items based on the probability of each group
