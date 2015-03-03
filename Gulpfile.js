@@ -25,7 +25,6 @@ var onError = function( err ) {
 
 var sources = {
   utils: ['./src/utils/**/*.js'],
-  plugins: ['./src/plugins/**/*.js'],
   app: [
     './src/application.js',
     './src/router.js',
@@ -142,15 +141,7 @@ gulp.task('monaco:modules', function() {
     .pipe(gulp.dest('./lib/'))
 });
 
-gulp.task('monaco:plugins', function() {
-  return gulp.src(sources.plugins)
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(lintScripts())
-    .pipe(umd(umdConf))
-    .pipe(gulp.dest('./lib/plugins/'))
-});
-
-gulp.task('monaco', ['monaco:utils', 'monaco:plugins', 'monaco:modules'], function() {
+gulp.task('monaco', ['monaco:utils', 'monaco:modules'], function() {
   return gulp.src(sources.app)
   .pipe( plumber( { errorHandler: onError } ) )
   .pipe(lintScripts())
