@@ -1,11 +1,15 @@
-version 0.5.0
+## version 0.5.1
+  - remove plugins since now each plugin has its own repo
+  - merged the license to an MIT license
+
+## version 0.5.0
   - added support to bower
   - added UMD support
   - automated the build using gulp
   - removed device detection from monaco
   - removed multi-request monaco module
 
-version 0.4.0
+## version 0.4.0
   - added monaco-mixins plugin
   - small code improvements for monaco utility methods
   - improved monaco application with better options support and some browser bug patches

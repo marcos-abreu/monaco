@@ -1,7 +1,7 @@
 {
   "name": "monaco",
   "main": "dist/monaco.js",
-  "version": "0.4.0",
+  "version": "0.5.1",
   "homepage": "https://github.com/marcos-abreu/monaco",
   "authors": [
     "marcos <marcos@wattpad.com>"

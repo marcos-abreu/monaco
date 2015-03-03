@@ -24,8 +24,6 @@ Even if you decide to use all modules available, ***Monaco*** is just 5.5kb (min
 
 - **monaco-transitions** - this module gives your application a way of setting up screen transitions, where each transition effect can be implemented based on your app requirements using any technology needed (e.g: javascript, css, or both) - [learn more](docs/modules/monaco-transitions.md).
 
-- **monaco-multirequest** - this module allows you make multiple async fetch requests at once and to manage them appropriately - [learn more](docs/modules/monaco-multirequest.md).
-
 - **monaco-analytics** - this module automatically sends a pageview tracking request every time you navigate to a different url and can be integrated with almost any analytics service provider - [learn more](docs/modules/monaco-analytics.md).
 
 - **monaco-experiments** - this module allows you to create split tests (experiments) and divide your users appropriately; you can target different controllers, views, templates or template elements as you need - [learn more](docs/modules/monaco-experiments.md).
@@ -40,10 +38,4 @@ On top of all the features described above, ***Monaco*** also provides a really 
 License
 ----
 
-***Monaco*** is freely distributable under the terms of the MIT license.
-
-Copyright(c) 2011-2013 Marcos Abreu
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+See [LICENSE](LICENSE)
