@@ -1,0 +1,29 @@
+{
+  "name": "monaco",
+  "main": "dist/monaco.js",
+  "version": "0.4.0",
+  "homepage": "https://github.com/marcos-abreu/monaco",
+  "authors": [
+    "marcos <marcos@wattpad.com>"
+  ],
+  "description": "web application framework based on backbonejs",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "monaco",
+    "backbonejs",
+    "web",
+    "framework"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
