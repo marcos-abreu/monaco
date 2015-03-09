@@ -106,7 +106,8 @@ var jshintOptions = {
     '_gaq': true,
     '_' : true,
     'Backbone' : true,
-    'localStorage' : true
+    'localStorage' : true,
+    'Promise': true
   }
 };
 
