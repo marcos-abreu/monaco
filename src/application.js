@@ -245,7 +245,7 @@ Monaco.Router = Backbone.Router.extend({
     }
     routeList = _.keys(routes);
 
-    while ((route = routeList.pop()) !== null) {
+    while ((route = routeList.pop())) {
       this._uroutes.unshift({key: route, value: routes[route]});
     }
   },
@@ -253,7 +253,7 @@ Monaco.Router = Backbone.Router.extend({
   // adds all undefined routes into Backbone.Router
   _addRoutes : function() {
     var route;
-    while((route = this._uroutes.pop()) !== null) {
+    while((route = this._uroutes.pop())) {
       // this needs to be added to the _route list before the route gets added to the Router.
       this._routes.push(route);
       this._addRoute(route.key, route.value);
