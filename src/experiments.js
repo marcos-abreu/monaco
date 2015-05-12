@@ -45,7 +45,7 @@ Experiments.prototype = _.extend(Experiments.prototype, {
   set: function(key, groups, options) {
     var experiment = key;
     if ( !(experiment instanceof Monaco.Experiment) ) {
-      experiment = new Monaco.Experiment(this, key, groups, _.extend(this.options, options));
+      experiment = new Monaco.Experiment(this, key, groups, _.extend({}, this.options, options));
     }
     this._experiments.push(experiment);
   },

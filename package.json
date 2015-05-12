@@ -1,6 +1,6 @@
 {
   "name": "monaco",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "web appliction framework based on backbonejs",
   "main": "index.js",
   "directories": {
