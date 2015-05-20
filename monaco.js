@@ -259,6 +259,28 @@ Monaco.Router = Backbone.Router.extend({
     }
   },
 
+  // tries to retrieve the original function name
+  _getFuncName : function(fn) {
+    var name;
+
+    if (typeof fn !== 'function' ) {
+      return; //undefined
+    }
+    // browser supports the new es6 function.name
+    else if (fn.name) {
+      return fn.name;
+    }
+    // old browser fallback implementation
+    else {
+      name = fn.toString().match(/function ([^\(]+)/);
+      if (name && name[1]) {
+        return name[1];
+      }
+    }
+
+    return; // undefined if it couldn't figure it out
+  },
+
   // adds all undefined routes into Backbone.Router
   _addRoutes : function() {
     var route;
@@ -271,35 +293,37 @@ Monaco.Router = Backbone.Router.extend({
 
   // adds one route into Backbone.Router
   _addRoute : function(route, options) {
+    var name,
+        callback;
+
     options = options || {};
 
     if (route !== '' && !route) {
       throw new Error('invalid route: ' + route);
     }
 
-    var callback = null;
-        // name = null; // todo: verify if it should be null or empty string
-
     if (_.isString(options)) {
-      callback = options;
+      name = options;
     }
     else if (_.isArray(options) && options.length > 0) {
-      callback = options[0];
-      // todo: I don't think we need to care about the name in this method,
-      //       since Backbone uses the name just to point to a router instance callback method
-      // if ((options.length > 1) && _.isString(options[1])) {
-      //     name = options[1];
-      // } else if (options.length > 1 && _.isObject(options[1])) {
-      //     name = options[1].name;
-      // }
+      name = options[0];
+      if (typeof name === 'function') {
+        callback = name;
+        name = this._getFuncName(callback) || '';
+      }
+      else if (typeof options[1] === 'function') {
+        callback = options[1];
+      }
+    }
+    else {
+      throw new Error('monaco :: invalid route options from route: ' + route );
     }
 
-    if (!callback) {
-      throw new Error('invalid callback from route: ' + route);
+    if (!name || !_.isString(name) || (name === '' && !callback)) {
+      throw new Error('invalid callback (name) from route: ' + route);
     }
 
-    return this.route(route, callback);
-    // return this.route(route, name, callback);
+    return this.route(route, name, callback);
   }
 });
 
@@ -443,290 +467,199 @@ return Monaco;
     root.Monaco = factory(root._, root.Backbone, root.localStorage);
   }
 }(this, function(_, Backbone, localStorage) {
-/*
- * Creates the View monaco class to manage `master` views and `sub-views` of your application
- */
-
 // make sure monaco is defined as the main object
 var Monaco = this.Monaco = (this.Monaco || {});
 
+var array = [];
+var slice = array.slice;
+
+/*
+ * View Manager Constructor
+ */
+var ViewManager = Monaco.ViewManager = function(parent, options) {
+  // manager options
+  this.options = options || {};
+
+  // internal sub-views object
+  this._children = {};
+
+  // when a parent is informed it will manage the subviews according to
+  // parent's events
+  // this method uses the parent, but DOES NOT keep a reference to it
+  if (parent && parent instanceof Monaco.View) {
+    this.listenTo(parent, 'rendered', this._onParentRender);
+    this.listenTo(parent, 'beforeRemove', this._onParentRemove);
+  }
+};
+
+/*
+ * View Manager extended methods
+ */
+ViewManager.prototype = _.extend(ViewManager.prototype, {
+
+  /*
+   * Handler triggered after parent view is rendered
+   *    - when developer didn't specifically state that subviews shouldn't be auto-rendered
+   *    - when subview key matches a valid parent selector
+   */
+  _onParentRender: function(parent) {
+    if (this.options.autoRender !== false) {
+      this.each(function(child, key) {
+        var $selector = parent.$el.find(key);
+        if ($selector.length > 0) {
+          $selector.html( child.render().$el );
+        }
+      }, this);
+    }
+  },
+
+  /*
+   * Handler triggered just before the parent view is removed the DOM
+   */
+  _onParentRemove: function() {
+    // this will invoke the 'remove' method of each child view
+    this.invoke( 'remove' );
+  },
+
+  /*
+   * Handler triggered after a child has been removed from the DOM
+   */
+  _onChildRemove: function(instance) {
+    // removes the reference to the dead instance
+    var name = this.find(this._children, {cid: instance.cid});
+    if (name) {
+      this._children[name] = void 0;
+    }
+  },
+
+  /*
+   * internal method that adds a child view to this manager
+   */
+  _addChild: function(name, instance) {
+    if (this._children[name]) {
+      this._children[name].remove();
+    }
+
+    this._children[name] = instance;
+    this.listenTo(this._children[name], 'remove', this._onChildRemove);
+    return this._children[name];
+  },
+
+  /*
+   * public method to add a child view to this manager
+   */
+  add: function(name, instance) {
+    var children = {};
+
+    if (typeof name === 'string' && name !== '' && instance instanceof Monaco.View) {
+      children[name] = instance;
+    }
+    else if (typeof name === 'object') {
+      children = name;
+      instance = name; // return value
+    }
+    else {
+      throw new Error('Monaco.ViewManager :: invalid parameters when setting subviews');
+    }
+
+    _.each(children, function(value, key) {
+      if (typeof key === 'string' && key !== '' && value instanceof Monaco.View) {
+        this._addChild(key, value);
+      }
+    }, this );
+
+    // returns instance being set, or in case of bulk set returns original object
+    return instance;
+  },
+
+  /*
+   * public method to set a child view to this manager (`add` shortcut)
+   */
+  set: function() {
+    return this.add.apply(this, arguments);
+  },
+
+  /*
+   * public method to get a child from this manager
+   */
+  get: function(name) {
+    return this._children[name];
+  }
+});
+
+// Mix in each Underscore method as a proxy to View#sub-views
+var methods = ['forEach', 'each', 'map', 'collect', 'reduce', 'foldl',
+    'inject', 'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
+    'reject', 'every', 'all', 'some', 'any', 'include', 'contains', 'invoke',
+    'max', 'min', 'toArray', 'size', 'shuffle', 'isEmpty', 'chain', 'sample',
+    'partition'];
+
+_.each(methods, function(method) {
+  if (!_[method]) {
+    return;
+  }
+  ViewManager.prototype[method] = function() {
+    var args = slice.call(arguments);
+    args.unshift(this._children);
+    return _[method].apply(_, args);
+  };
+});
+
 var View = Monaco.View;
 Monaco.View = View.extend({
-  // application namespace
-  namespace : 'views',
 
-  // subviews associated with this view with options to help define
-  // and render each subview
-  views : {},
-
-  // override constructor function
-  constructor : function(options) {
+  // constructor
+  constructor: function(options) {
     options = options || {};
+
     // call the original constructor method
     View.prototype.constructor.apply(this, arguments);
 
-    // assigns a template to the view
-    if (options.template) {
-      this.template = options.template;
-    }
+    // create a subviews from ViewManager
+    this.subviews = new Monaco.ViewManager(this, options);
 
-    // children view instances
-    this.children = {};
-
-    // instantiate each available subview
-    _.each(this.views, this._subviewConstructor, this);
-
-    // wrap the render method to work with subviews
+    // overrides the view render to trigger an event
     var render = this.render;
-    this.render = _.bind(function() {
-      // render the master view first
-      render.apply(this, arguments);
-      // then render subviews
-      this._subviewsRender.apply(this, arguments);
+    this.render = _.bind(function monacoViewRender() {
+      var result;
 
-      this.trigger('rendered', this);
-      return this;
-    }, this);
+      // call the original render caching the result;
+      result = render.apply(this, arguments);
 
-    // wrap the remove method to work with subviews
-    var remove = this.remove;
-    this.remove = _.bind(function() {
-      // remove the subviews first
-      this._subviewsRemove.apply(this, arguments);
-      // then remove the master view
-      remove.apply(this, arguments);
-
-      this.trigger('removed', this);
-      return this;
-    }, this);
-  },
-
-  // Default render method that renders the template by appending it to the view's element
-  render : function(data) {
-    // only renders view's that have a template
-    if ( this.template ) {
-      // data will be a mixture of data parameters with either the view's collection or model
-      data = _.extend(data, (this.collection ? this.collection.toJSON() : (this.model ? this.model.toJSON() : {})));
-
-      // render the template using the data, appending the result into the view's element
-      this.$el.append(this.template(data));
-    }
-
-    // return the current view after rendering to allow chainable calls
-    return this;
-  },
-
-  // adds a subview after this view has been instantiated
-  // the parameter view should be on the same format you would include your views in a template
-  add : function(view) {
-    var keys = _.keys(view),
-        selector = keys[0],
-        options = view[selector];
-
-    if (!selector || !options) {
-      throw new Error('Monaco :: Invalid subview parameters');
-    }
-    this._subviewConstructor(options, selector);
-  },
-
-  // creates the necessary subview instance(s), storing their reference
-  _subviewConstructor : function(options, selector) {
-    var ViewClass,
-        params = {};
-
-    options = options || {};
-    // todo: find a way of checking if this is an anonymous function or a View Class that inherits from Monaco.View
-    //       the following line just works with anonymous function that returns a Monaco.View class
-    //       _.result can't be used since we want to specify the context (this keyword)
-    ViewClass = options.viewClass ? options.viewClass.call(this) : Monaco.View;
-
-    // todo: find a way of checking if this is an anonymous function or a Collection Class that inherits from Monaco.Collection
-    //       the following line just works with anonymous function that returns a Monaco.Collection class
-    //       _.result can't be used since we want to specify the context (this keyword)
-    var collection = options.collection ? options.collection.call(this) : this.collection;
-
-    // sets the collection parameter if available
-    if (collection && !options.collectionItem) {
-      params.collection = collection;
-    }
-    // sets the model parameter if available
-    else if (options.model || this.model) {
-      params.model = (options.model || this.model);
-    }
-    // sets the template parameter if available
-    if (options.template) {
-      params.template = options.template;
-    }
-
-    // if collectionItem then creates one subview for each model in the collection
-    if (collection && options.collectionItem) {
-      this._subviewPerModelConstructor(selector, collection, options, params, ViewClass);
-    }
-    // creates only one subview
-    else {
-      var view = new ViewClass(params);
-      view.parent = this;
-      this.children[selector] = view;
-    }
-  },
-
-  // creates one subview per model in the collection, it also sets the master view
-  // to handle events coming from the collection
-  _subviewPerModelConstructor: function(selector, collection, options, params, ViewClass) {
-    // unique namespace per view child to append methods specifically to these views
-    var suffix = this.views[selector].suffix = options.suffix = (options.suffix || _.uniqueId('sfx'));
-    this[suffix] = {};
-
-    // // wrap the generic addOne to inject the itemView and listWrapper properties
-    if (!this[suffix].addOne) {
-      this[suffix].addOne = _.bind(function() {
-        var args = Array.prototype.slice.call(arguments, 0);
-        args.push({itemView: ViewClass, listWrapper: selector, callback: function(view) {
-          view.parent = this;
-          this.children[selector].push(view);
-        }, context: this});
-        return Monaco.ViewForModels.prototype.addOne.apply(this[suffix], args);
-      }, this);
-    }
-
-    // // wrap the generic addAll to inject the itemView and listWrapper properties
-    if (!this[suffix].addAll) {
-      this[suffix].addAll = _.bind(function() {
-          var args = Array.prototype.slice.call(arguments, 0);
-          args.push({itemView: ViewClass, listWrapper: selector, callback: function(view) {
-            view.parent = this;
-            this.children[selector].push(view);
-          }, context: this});
-          return Monaco.ViewForModels.prototype.addAll.apply(this[suffix], args);
-      }, this);
-    }
-
-    // // set the proper events so this view will be listening to the collection events
-    // // and acting accordingly
-    this.listenTo(collection, 'add', _.bind(this[suffix].addOne, this[suffix]));
-    this.listenTo(collection, 'reset', _.bind(this[suffix].addAll, this[suffix]));
-
-    this.children[selector] = [];
-
-    // for each model in the collection creates a new view with the passed parameters
-    collection.each(function(model) {
-      var viewParams = _.clone(params);
-      viewParams.model = model;
-      var view = new ViewClass(viewParams);
-      view.parent = this;
-      this.children[selector].push(view);
-    }, this);
-  },
-
-  // Render each subview after the main view has been rendered. Your can
-  // override this by passing `autoRender: false` as an option for the subview
-  _subviewsRender : function() {
-    var _arguments = arguments;
-    _.each(this.children, function(view, selector) {
-      // have to check since some values of the this.children might be an array
-      // instead of a view instance
-      if (view instanceof Monaco.View) {
-        var options = this.views[selector];
-        // check if the view should be rendered
-        if (!_.has(options, 'autoRender') || options.autoRender === true) {
-
-          // render one view per collection model by using the `addAll` method
-          if (view.collection && options.collectionItem) {
-            // todo: verify if I should create a third argument as I'm doing now to
-            //       include the targets for the viewClass and wrapper of the list
-            //       or if I should include them in the options object parameter instead
-            view[options.suffix].addAll(view.collection, {}, {
-              itemView: options.viewClass ? options.viewClass.call(view) : Monaco.ViewClass,
-              listWrapper: selector
-            });
-          }
-
-          // render a single view
-          else {
-            // render the subview and append its content into the parent view using the
-            // selector associated with the subview
-            // todo: remove jQuery dependency
-            this.$el.find(selector).append(view.render.apply(view, _arguments).el);
-          }
-        }
+      if (Promise && result instanceof Promise) {
+        return result.then( function( view ) {
+          view.trigger('rendered', view);
+        } );
       }
-    }, this);
-  },
-
-  // Remove (DOM + Events) each subview before removing the main view
-  _subviewsRemove : function() {
-    var _arguments = arguments;
-    _.each(this.children, function(view, selector) {
-
-      // get original view options
-      var options = this.views[selector];
-
-      // remove each collection's model views
-      if (_.isArray(view)) {
-        // remove each subview from an array of views
-        for(var i = 0, l = view.length; i < l; i++) {
-            view[i].remove.apply(view, _arguments);
-        }
-
-        // removed event listeners
-        // todo: verify if I need to manually unregister the event listeners
-        this.stopListening(this.collection, 'add',  this[options.suffix].addOne);
-        this.stopListening(this.collection, 'reset', this[options.suffix].addAll);
-
-        // remove the suffix namespace
-        delete this[options.suffix];
-      }
-      // remove single view
       else {
-        view.remove.apply(view, _arguments);
+        this.trigger('rendered', this);
+        return result;
       }
     }, this);
 
-    // resetting the this.children to an empty object
-    this.children = {};
+    // overrides the view remove to trigger an event
+    var remove = this.remove;
+    this.remove = _.bind(function monacoViewRemove() {
+      var result;
+
+      this.trigger('beforeRemove', this);
+      // call the original remove caching the result;
+      result = remove.apply(this, arguments);
+
+      if (Promise && result instanceof Promise) {
+        return result.then( function( view ) {
+          view.trigger('rendered', view);
+        } );
+      }
+      else {
+        this.trigger('removed', this);
+        return result;
+      }
+    }, this);
   }
 
 });
 
-Monaco.ViewForModels = Monaco.View.extend({
-  // adds one element to the set of elements by rendering the content of a model
-  addOne : function(model, collection, options, info, fromAddAll) {
-    if ( !(collection instanceof Monaco.Collection) ) {
-      fromAddAll = info;
-      info = options;
-      options = collection;
-      collection = null;
-    }
-    var ViewClass = info.itemView || this.itemView,
-        view = new ViewClass( { model : model } ),
-        content = view.render( model.toJSON() ).el;
-
-    if (info && info.callback) {
-      info.callback.call(info.context || this, view);
-    }
-    if (fromAddAll === true) {
-      return content;
-    }
-    // todo: the following was disabled until I define what to do with jquery as a dependency
-    // $( info.listWrapper || this.listWrapper ).append( content );
-  },
-
-  // adds one element per model based on a collection instance
-  addAll : function(collection, options, info) {
-    var result = [];
-    options = options || {};
-    if ( !options.keepValues ) {
-      // todo: the following was disabled until I define what to do with jquery as a dependency
-      // $( info.listWrapper || this.listWrapper ).html(''); //clear list
-    }
-    collection.each( function( obj ) {
-      result.push(this.addOne( obj, options, info, true ));
-    }, this );
-
-    // todo: the following was disabled until I define what to do with jquery as a dependency
-    // $( info.listWrapper || this.listWrapper ).append(result);
-  }
-});
 
 return Monaco;
 }));
@@ -841,10 +774,12 @@ Monaco.Application.prototype.local = {
     var isCollection = _.has(obj, 'models'),
         collection = isCollection ? obj : obj.collection || null,
         resource = collection ? _.result(collection, 'resource') : _.result(obj, 'resource');
+
+    // an expire option will override any instance or class defined expiration
     expire = (expire !== void 0) ? expire : false;
 
+    // don't cache if resource property is not available
     if (!resource) {
-      // todo: find a way to log  - 'unable to identify object\'s resource'
       return;
     }
 
@@ -859,6 +794,7 @@ Monaco.Application.prototype.local = {
 
       expire = (expire !== false) ? expire : _.result(collection, 'expireLocal');
     }
+
     // Collections or Models NOT linked with any Collection
     else {
       expire = (expire !== false) ? expire : _.result(obj, 'expireLocal');
@@ -911,17 +847,24 @@ Monaco.Application.prototype.local = {
     return null;
   },
 
-  // merge the model with the collection data
+  // merge the model with the collection data, returning the new collection data
+  // as if it was the data requested from the server
   _addToCollectionData : function(model, data, collection) {
-    var restfulData,
-        collectionData = this.get(collection);
-    if (collectionData) {
-      restfulData = collection.parse(collectionData);
-      collection.reset(restfulData, { silent: true });
+
+    var modelRef = collection.get( model.id );
+    if ( modelRef ) {
+      // todo: verify if this should or shouldn't happen silently
+      modelRef.set( data, { silent: true } );
+    }
+    else {
+      // todo: verify if this should or shouldn't happen silently
+      collection.add( data, { silent: true } );
     }
 
-    collection.add( data, { silent: true, merge: true } );
-    return collection.revertParse && typeof collection.revertParse === 'function' ? collection.revertParse() : collection.toJSON();
+    // return the data as if it was requested by an api request
+    return collection.revertParse && typeof collection.revertParse === 'function' ?
+              collection.revertParse() :
+              collection.toJSON();
   },
 
   // get the resource if it is available in memory
@@ -1062,6 +1005,36 @@ Monaco.Application.prototype.local = {
 
 var collectionInitialize = Monaco.Collection.prototype.initialize;
 Monaco.Collection.prototype.initialize = function() {
+
+  this._cacheCollection = function(options) {
+    var data;
+
+    // if original call IS NOT a fetch from local storage and this collection
+    // should be cached
+    if (this._app && !options.fromLocal &&
+      (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
+
+      // make sure the data has the same structure as the original server request
+      data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
+
+      // replace the local data with the new data
+      this._app.local.set(this, data);
+    }
+  };
+
+  // remove the collection from local storage if it is reset
+  this.on('reset', function() {
+    var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
+        resource = _.result(this, 'resource');
+
+    if (resource && this.length > 0) {
+      this._cacheCollection(options);
+    }
+    else if (resource) {
+      this._app.clear(resource);
+    }
+  } );
+
   // todo: the `remove` and `add` events are called once per each model what causes
   //       this method to reset the collection multiple times, if there was a way of
   //       knowing that a certain event is the last in a series of events fired then
@@ -1071,42 +1044,23 @@ Monaco.Collection.prototype.initialize = function() {
   //       trigger a remove from the collection
 
   // listen to collection events and updates local caching accordingly
-  this.on('add remove change reset', function() {
-    var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
-        data;
+  this.on('add remove change', function() {
+    var options = arguments.length > 0 ? arguments[arguments.length - 1] : {};
 
-    // if original call IS NOT a fetch from local storage and this collection
-    // should be cached
-    if (!options.fromLocal &&
-      (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
-
-      // ????
-      // this.fetch({localOnly: true, cacheLocal: false, silent: true});
-
-      // make sure the data has the same structure as the original server request
-      data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
-
-      // replace the local data with the new data
-      this._app.local.set(this, data);
-    }
+    this._cacheCollection(options);
   }, this);
   return collectionInitialize.apply(this, arguments);
 };
 
 var modelInitialize = Monaco.Model.prototype.initialize;
 Monaco.Model.prototype.initialize = function() {
-  // listen to collection events and updates local caching accordingly
-  this.on('change', function() {
-    var options = arguments.length > 0 ? arguments[arguments.length - 1] : {},
-        data;
+  this._cacheModel = function(options) {
+    var data;
 
     // if original call IS NOT a fetch from local storage and this collection
     // should be cached
-    if (!options.fromLocal &&
-        (_.result(this, 'cacheLocal') === true || (this._app && this._app.local.autoCache === true))) {
-
-      // ????
-      // this.fetch({localOnly: true, cacheLocal: false, silent: true});
+    if (this._app && !options.fromLocal &&
+        (_.result(this, 'cacheLocal') === true || this._app.local.autoCache === true)) {
 
       // make sure the data has the same structure as the original server request
       data = ( this.revertParse && typeof this.revertParse === 'function' ) ? this.revertParse() : this.toJSON();
@@ -1114,6 +1068,13 @@ Monaco.Model.prototype.initialize = function() {
       // replace the local data with the new data
       this._app.local.set(this, data);
     }
+  };
+
+  // listen to collection events and updates local caching accordingly
+  this.on('change', function() {
+    var options = arguments.length > 0 ? arguments[arguments.length - 1] : {};
+
+    this._cacheModel(options);
   }, this);
   return modelInitialize.apply(this, arguments);
 };
