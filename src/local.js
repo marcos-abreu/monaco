@@ -356,7 +356,7 @@ Monaco.Collection.prototype.initialize = function() {
       this._cacheCollection(options);
     }
     else if (resource) {
-      this._app.clear(resource);
+      this._app.local.clear(resource);
     }
   } );
 
