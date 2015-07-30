@@ -1,3 +1,18 @@
+## version 0.5.5
+  - custom caching - cache header fix
+
+## version 0.5.4
+  - fixed local storage bugs
+
+## version 0.5.3
+  - named routes
+  - caching fixes
+  - simplified views
+  - support non-named routes
+
+## version 0.5.2
+  - fixed issue where multiple experiments were getting its options object overridden with previous experiments.
+
 ## version 0.5.1
   - remove plugins since now each plugin has its own repo
   - merged the license to an MIT license
